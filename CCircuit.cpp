@@ -90,14 +90,15 @@ std::pair<uint16_t, uint16_t> getTerminalDimensions ()
         dim.first = ts.ws_col;
         dim.second = ts.ws_row;
     #endif
+    return dim;
 }
 void resizeScreen ()
 {
     auto dim = getTerminalDimensions();
-    screenH = (dim.first < boardH ? dim.first: boardH) - 1;
-    screenW = (dim.second < boardW ? dim.second : boardW);
-    screenHh = screenH / 2;
+    screenW = (dim.first < boardW ? dim.first : boardW);
+    screenH = (dim.second < boardH ? dim.second: boardH) - 1;
     screenWh = screenW / 2;
+    screenHh = screenH / 2;
 }
 
 #define NODIR       0
@@ -168,8 +169,8 @@ void display ()
     buffer += (paused ? "  paused" : "");
     buffer += (labelMode ? "  label mode" : "");
     std::string space = "";
-    uint32_t sLen = screenW - (buffer.length() - barOffLen) - projName.length();
-    for (uint32_t i = 0; i < sLen; ++i) { space += " "; }
+    int32_t sLen = screenW - (buffer.length() - barOffLen) - projName.length();
+    for (int32_t i = 0; i < sLen; ++i) { space += " "; }
     buffer += space + "\033[1;4m" + projName + "\033[0m";
   //Board
     int sy, sx;
