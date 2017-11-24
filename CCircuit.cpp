@@ -26,6 +26,7 @@ const uint32_t boardHh = boardH / 2;
 char board[boardW][boardH];
 int32_t cursorX = 16;
 int32_t cursorY = 8;
+bool elec_cursor = false;
 
 uint8_t switches[10];
 bool placedSwitches[10];
@@ -451,6 +452,11 @@ void elec () //Electrify the board appropriately
             else if (*look == PW_W_DIODE) { *look = UN_W_DIODE; } //Powered W Diode to W Diode
         }
     }
+  //Electrify cursor?
+    if (elec_cursor) {
+        elec_cursor = false;
+        addBranch(cursorX, cursorY, 0);
+    }
   //Wires & inline components
     bool moved = true;
     bool skipped = false;
@@ -781,6 +787,7 @@ int32_t main ()
     std::cout << "Patrick Bowen @phunanon 2016\n"
               << "\nINSTRUCTIONS"
               << "\n[space]\t\tremove anything"
+              << "\n[enter]\t\telectrify cursor"
               << "\n.oeu\t\tup, left, down, right"
               << "\n>OEU\t\tfar up, far left, far down, far right"
               << "\nhH\t\tplace wire, toggle auto-bridge for wires and diodes"
@@ -856,10 +863,12 @@ int32_t main ()
                         lDirY = lDirX = 0;
                         lDirX = -1;
                         break;
-                    case '\n':
+                    case '\n': //New-line OR electrify cursor
                         if (labelMode) {
                             cursorX = startLabelX;
                             if (cursorY + 1 < boardH) { ++cursorY; }
+                        } else {
+                            elec_cursor = true;
                         }
                         break;
                     case 127: //Left-remove
