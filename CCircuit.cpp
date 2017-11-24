@@ -787,7 +787,7 @@ int32_t main ()
               << "\na\t\ttoggle general use wire/directional wire"
               << "\nfF\t\tcrosshairs, goto coord"
               << "\n0-9\t\tplace/toggle switch"
-              << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, switch"
+              << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, power"
               << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
               << "\nb\t\tplace bit"
               << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
