@@ -308,7 +308,7 @@ void display ()
           //Crosshairs and cursor
             if ((crosshairs && (x == cursorX || y == cursorY)) || (x == cursorX && y == cursorY) || (x == cursorX && sy == 0) || (x == cursorX && sy == screenH - 1) || (sx == 0 && y == cursorY) || (sx == screenW - 1 && y == cursorY)) {
                 buff = buff.substr(buff.length() - 1, buff.length());
-                buff = "\033[0;37;4" + std::string(dataToPaste ? "6" : "0") + "m" + buff;
+                buff = "\033[0;37;4" + std::string(dataToPaste ? "6" : (elec_cursor ? "4" : "0")) + "m" + buff;
             }
 
             buffer += buff;
