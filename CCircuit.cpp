@@ -1,5 +1,4 @@
 //TODO
-//Swap y and x throughout code
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 #include <iostream>     //For output to the terminal
@@ -24,8 +23,8 @@ const uint32_t boardH = 4096;
 const uint32_t boardWh = boardW / 2;
 const uint32_t boardHh = boardH / 2;
 char board[boardW][boardH];
-int cursorX = 16;
-int cursorY = 8;
+int32_t cursorX = 16;
+int32_t cursorY = 8;
 const uint8_t UNTILHYPER = 20;
 const uint8_t HYPER = 2;
 
@@ -33,7 +32,7 @@ uint8_t switches[10];
 bool placedSwitches[10];
 uint8_t switch_num;
 
-int elecX = boardW, elecY = boardH, elecX2 = 0, elecY2 = 0; //Electric bounds
+int32_t elecX = boardW, elecY = boardH, elecX2 = 0, elecY2 = 0; //Electric bounds
 
 const uint32_t UNDOS = 512;
 uint32_t undos[UNDOS][4]; //[u][x, y, was, now]
@@ -60,8 +59,8 @@ uint32_t screenHh = screenH / 2; //Half of the height of the screen
 
 void clearScreen () { std::cout << "\033[2J\033[1;1H"; }
 
-int boardCropX;
-int boardCropY;
+int32_t boardCropX;
+int32_t boardCropY;
 uint32_t boardCropX2;
 uint32_t boardCropY2;
 void calcBoardCrops () //For calculating the part of the board on the screen
@@ -173,10 +172,10 @@ void display ()
     for (int32_t i = 0; i < sLen; ++i) { space += " "; }
     buffer += space + "\033[1;4m" + projName + "\033[0m";
   //Board
-    int sx, sy;
-    for (int y = boardCropY, sy = 0; y < boardCropY2; ++y, ++sy) {
+    int32_t sx, sy;
+    for (int32_t y = boardCropY, sy = 0; y < boardCropY2; ++y, ++sy) {
         buffer += '\n';
-        for (int x = boardCropX, sx = 0; x < boardCropX2; ++x, ++sx) {
+        for (int32_t x = boardCropX, sx = 0; x < boardCropX2; ++x, ++sx) {
             buff = " ";
             char *look = &board[x][y];
             switch (*look) {
@@ -321,7 +320,7 @@ void display ()
 
 
 
-bool powerAtDir (int x, int y, uint8_t dir, bool dead = false)
+bool powerAtDir (int32_t x, int32_t y, uint8_t dir, bool dead = false)
 {
     if (x < 0 || y < 0 || x >= boardW || y >= boardH) { return false; }
     char look = board[x][y];
@@ -383,7 +382,7 @@ bool powerAtDir (int x, int y, uint8_t dir, bool dead = false)
 }
 
 //Fix bounds checking
-uint8_t nextToLives (int x, int y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
+uint8_t nextToLives (int32_t x, int32_t y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
 {
     uint8_t lives = 0;
   //Check North
@@ -405,7 +404,7 @@ uint8_t nextToLives (int x, int y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 X
     return lives;
 }
 
-uint8_t betweenLives (int x, int y)
+uint8_t betweenLives (int32_t x, int32_t y)
 {
     uint8_t lives = 0;
   //Check East
@@ -422,13 +421,13 @@ uint8_t betweenLives (int x, int y)
 
 struct Branch
 {
-    int x, y;
+    int32_t x, y;
     uint8_t d;
 };
 
 Branch branch[2048];
 uint32_t branches = 0;
-int addBranch (int x, int y, uint8_t prevDir)
+int32_t addBranch (int32_t x, int32_t y, uint8_t prevDir)
 {
     branch[branches].x = x;
     branch[branches].y = y;
@@ -440,8 +439,8 @@ uint32_t nextB;
 void elec () //Electrify the board appropriately
 {
   //Reset the electrified
-    for (int x = elecX; x <= elecX2; ++x) {
-        for (int y = elecY; y <= elecY2; ++y) {
+    for (int32_t x = elecX; x <= elecX2; ++x) {
+        for (int32_t y = elecY; y <= elecY2; ++y) {
             char *look = &board[x][y];
             if      (*look == PW_WIRE)    { *look = UN_WIRE; }    //Powered Wire to Wire
             else if (*look == PW_H_WIRE)  { *look = UN_H_WIRE;  } //Powered H Wire to H Wire
@@ -589,8 +588,8 @@ void elec () //Electrify the board appropriately
     memset(branch, 0, sizeof(branch)); //Remove all existing branches
     branches = 0;
   //Components
-    for (int x = elecX; x <= elecX2; ++x) {
-        for (int y = elecY2; y >= elecY; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
+    for (int32_t x = elecX; x <= elecX2; ++x) {
+        for (int32_t y = elecY2; y >= elecY; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
             bool unpowerDelay = true; //Unpower potential Delay below us?
             switch (board[x][y]) {
                 case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: //Unpowered Wire/V Wire/Delay/Bridge
@@ -776,7 +775,7 @@ std::string getInput (std::string defau = "")
 uint32_t startLabelX; //Label's X
 char lDirX, lDirY, prevZ, prevMove, prevMoveCount, elecCounter;
 uint32_t prevX, prevY;
-int main ()
+int32_t main ()
 {
   //Load shite to listen to pressed keys
     loadKeyListen();
@@ -1044,8 +1043,8 @@ int main ()
                             copyXDist = (copyX2 - copyX);
                             copyYDist = (copyY2 - copyY);
                             copyData->clear();
-                            for (int x = copyX; x < copyX2; ++x) {
-                                for (int y = copyY; y < copyY2; ++y) {
+                            for (int32_t x = copyX; x < copyX2; ++x) {
+                                for (int32_t y = copyY; y < copyY2; ++y) {
                                     copyData->push_back(board[x][y]);
                                 }
                             }
@@ -1069,20 +1068,20 @@ int main ()
                     case 'J': //Paste mask
                         if (dataToPaste) {
                             if (pressedCh == 'k' || pressedCh == 'j') { //Remove copied-from area (move/clear)?
-                                for (int x = copyX; x < copyX2; ++x) {
-                                    for (int y = copyY; y < copyY2; ++y) {
+                                for (int32_t x = copyX; x < copyX2; ++x) {
+                                    for (int32_t y = copyY; y < copyY2; ++y) {
                                         board[x][y] = EMPTY;
                                     }
                                 }
                             }
-                            int cXend, cYend;
+                            int32_t cXend, cYend;
                             cXend = cursorX + copyXDist;
                             cYend = cursorY + copyYDist;
                             if (pressedCh != 'j') { //Paste copy data onto the board
                                 uint32_t i = 0;
                                 if (pressedCh == 'K') { //Swap
-                                    for (int x = copyX, x2 = cursorX; x < copyX2; ++x, ++x2) {
-                                        for (int y = copyY, y2 = cursorY; y < copyY2; ++y, ++y2) {
+                                    for (int32_t x = copyX, x2 = cursorX; x < copyX2; ++x, ++x2) {
+                                        for (int32_t y = copyY, y2 = cursorY; y < copyY2; ++y, ++y2) {
                                             board[x][y] = board[x2][y2];
                                             board[x2][y2] = copyData->at(i);
                                             ++i;
@@ -1091,8 +1090,8 @@ int main ()
                                     i = 0;
                                 }
                                 if (pressedCh == 'm') { //x-flip paste
-                                    for (int x = cXend - 1; x >= cursorX; --x) {
-                                        for (int y = cursorY; y < cYend; ++y) {
+                                    for (int32_t x = cXend - 1; x >= cursorX; --x) {
+                                        for (int32_t y = cursorY; y < cYend; ++y) {
                                             board[x][y] = copyData->at(i);
                                             if (board[x][y] == UN_E_DIODE) { board[x][y] = UN_W_DIODE; } //E Diode to W Diode
                                             else if (board[x][y] == UN_W_DIODE) { board[x][y] = UN_E_DIODE; } //W Diode to E Diode
@@ -1100,8 +1099,8 @@ int main ()
                                         }
                                     }
                                 } else if (pressedCh == 'w') { //y-flip paste
-                                    for (int x = cursorX; x < cXend; ++x) {
-                                        for (int y = cYend - 1; y >= cursorY; --y) {
+                                    for (int32_t x = cursorX; x < cXend; ++x) {
+                                        for (int32_t y = cYend - 1; y >= cursorY; --y) {
                                             board[x][y] = copyData->at(i);
                                             if (board[x][y] == UN_S_DIODE) { board[x][y] = UN_N_DIODE; } //S Diode to N Diode
                                             else if (board[x][y] == UN_N_DIODE) { board[x][y] = UN_S_DIODE; } //N Diode to S Diode
@@ -1110,8 +1109,8 @@ int main ()
                                     }
                                 } else { //Other paste
                                     if (pressedCh == 'B') { //Unelectrified
-                                        for (int x = cursorX; x < cXend; ++x) {
-                                            for (int y = cursorY; y < cYend; ++y) {
+                                        for (int32_t x = cursorX; x < cXend; ++x) {
+                                            for (int32_t y = cursorY; y < cYend; ++y) {
                                                 uint8_t c = copyData->at(i);
                                                 switch (c) {
                                                     case P3_STRETCH: case P2_STRETCH: case P1_STRETCH: c = U1_STRETCH; break;
@@ -1125,16 +1124,16 @@ int main ()
                                         }
                                     } else { //Unmodified
                                         if (pressedCh == 'J') { //Paste mask (' ' is not pasted)
-                                            for (int x = cursorX; x < cXend; ++x) {
-                                             for (int y = cursorY; y < cYend; ++y) {
+                                            for (int32_t x = cursorX; x < cXend; ++x) {
+                                             for (int32_t y = cursorY; y < cYend; ++y) {
                                                     char c = copyData->at(i);
                                                     if (c) { board[x][y] = c; }
                                                     ++i;
                                                 }
                                             }
                                         } else { //Normal, full paste
-                                            for (int x = cursorX; x < cXend; ++x) {
-                                                for (int y = cursorY; y < cYend; ++y) {
+                                            for (int32_t x = cursorX; x < cXend; ++x) {
+                                                for (int32_t y = cursorY; y < cYend; ++y) {
                                                     board[x][y] = copyData->at(i);
                                                     ++i;
                                                 }
@@ -1183,8 +1182,8 @@ int main ()
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
                                 std::string saveData = "";
-                                for (int x = elecX; x <= elecX2; ++x) {
-                                    for (int y = elecY; y <= elecY2; ++y) {
+                                for (int32_t x = elecX; x <= elecX2; ++x) {
+                                    for (int32_t y = elecY; y <= elecY2; ++y) {
                                         switch (board[x][y]) {
                                             case EMPTY:                          saveData += ' '; break;
                                             case UN_WIRE: case PW_WIRE:          saveData += '#'; break;
@@ -1243,7 +1242,7 @@ int main ()
                                 uint64_t len = saveData.length();
                                 if (len > 0) {
                                     uint8_t saveChar;
-                                    int x = 0, maxX = 0, y = 0;
+                                    int32_t x = 0, maxX = 0, y = 0;
                                     for (uint32_t i = 0; i < len; ++i) {
                                         if (saveData[i] == '\n') {
                                             ++y;
@@ -1338,8 +1337,8 @@ int main ()
                     switch_num = pressedCh - 48;
                     if (placedSwitches[switch_num]) { //Is the switch already placed? Power it
                         bool found = false;
-                        for (int x = 0; x < boardW; ++x) {
-                            for (int y = 0; y < boardH; ++y) {
+                        for (int32_t x = 0; x < boardW; ++x) {
+                            for (int32_t y = 0; y < boardH; ++y) {
                                 if (board[x][y] == 50 + switch_num) { found = true; }
                             }
                         }
@@ -1357,8 +1356,8 @@ int main ()
                 }
               //Re-calculate the electrification area
                 if (toMove) { //Use heuristic
-                    int x = cursorX;
-                    int y = cursorY;
+                    int32_t x = cursorX;
+                    int32_t y = cursorY;
                     if (x < elecX) { elecX = x; }
                     else if (x > elecX2) { elecX2 = x; }
                     if (y < elecY) { elecY = y; }
@@ -1369,8 +1368,8 @@ int main ()
                     elecX2 = 0;
                     elecY = boardH;
                     elecY2 = 0;
-                    for (int x = 0; x < boardW; ++x) {
-                        for (int y = 0; y < boardH; ++y) {
+                    for (int32_t x = 0; x < boardW; ++x) {
+                        for (int32_t y = 0; y < boardH; ++y) {
                             if (board[x][y]) {
                                 if (x < elecX) { elecX = x; }
                                 else if (x > elecX2) { elecX2 = x; }
