@@ -1,6 +1,7 @@
 //TODO
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
+//Make bikeyboardal
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -1182,8 +1183,8 @@ int32_t main ()
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
                                 std::string saveData = "";
-                                for (int32_t x = elecX; x <= elecX2; ++x) {
-                                    for (int32_t y = elecY; y <= elecY2; ++y) {
+                                for (int32_t y = elecY; y <= elecY2; ++y) {
+                                    for (int32_t x = elecX; x <= elecX2; ++x) {
                                         switch (board[x][y]) {
                                             case EMPTY:                          saveData += ' '; break;
                                             case UN_WIRE: case PW_WIRE:          saveData += '#'; break;
@@ -1231,55 +1232,55 @@ int32_t main ()
                                 std::cout << "Decompressing..." << std::endl;
                                 system(("cp " + load + ".gz load.gz").c_str());
                                 system((SYSPATH + "gzip -d load.gz").c_str());
-                                std::string saveData = "";
+                                std::string loadData = "";
                                 std::ifstream in("load");
-                                saveData = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                                loadData = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
                                 in.close();
                                 system("rm load");
                                 std::cout << "Loading..." << std::endl;
                                 memset(board, 0, sizeof(board[0][0]) * boardH * boardW); //Set the board Empty
                                 projName = load;
-                                uint64_t len = saveData.length();
+                                uint64_t len = loadData.length();
                                 if (len > 0) {
-                                    uint8_t saveChar;
+                                    uint8_t loadChar;
                                     int32_t x = 0, maxX = 0, y = 0;
                                     for (uint32_t i = 0; i < len; ++i) {
-                                        if (saveData[i] == '\n') {
+                                        if (loadData[i] == '\n') {
                                             ++y;
                                             maxX = x;
                                             x = 0;
                                         } else {
-                                            saveChar = EMPTY;
-                                            switch (saveData[i])
+                                            loadChar = EMPTY;
+                                            switch (loadData[i])
                                             {
                                                 case ' ': break; //Empty
-                                                case '#': saveChar = UN_WIRE;    break;
-                                                case 'A': saveChar = UN_AND;     break;
-                                                case 'N': saveChar = UN_NOT;     break;
-                                                case 'X': saveChar = UN_XOR;     break;
-                                                case '+': saveChar = UN_BRIDGE;  break;
-                                                case '@': saveChar = PW_POWER;   break;
-                                                case 'V': saveChar = UN_S_DIODE; break;
-                                                case ';': saveChar = UN_WALL;    break;
-                                                case 'B': saveChar = UN_BIT;     break;
-                                                case '^': saveChar = UN_N_DIODE; break;
-                                                case '%': saveChar = UN_DELAY;   break;
-                                                case '$': saveChar = U1_STRETCH; break;
-                                                case '>': saveChar = UN_E_DIODE; break;
-                                                case '<': saveChar = UN_W_DIODE; break;
-                                                case '-': saveChar = UN_H_WIRE;  break;
-                                                case '|': saveChar = UN_V_WIRE;  break;
+                                                case '#': loadChar = UN_WIRE;    break;
+                                                case 'A': loadChar = UN_AND;     break;
+                                                case 'N': loadChar = UN_NOT;     break;
+                                                case 'X': loadChar = UN_XOR;     break;
+                                                case '+': loadChar = UN_BRIDGE;  break;
+                                                case '@': loadChar = PW_POWER;   break;
+                                                case 'V': loadChar = UN_S_DIODE; break;
+                                                case ';': loadChar = UN_WALL;    break;
+                                                case 'B': loadChar = UN_BIT;     break;
+                                                case '^': loadChar = UN_N_DIODE; break;
+                                                case '%': loadChar = UN_DELAY;   break;
+                                                case '$': loadChar = U1_STRETCH; break;
+                                                case '>': loadChar = UN_E_DIODE; break;
+                                                case '<': loadChar = UN_W_DIODE; break;
+                                                case '-': loadChar = UN_H_WIRE;  break;
+                                                case '|': loadChar = UN_V_WIRE;  break;
                                             }
-                                            if (saveData[i] >= 48 && saveData[i] <= 57) //Is switch?
+                                            if (loadData[i] >= 48 && loadData[i] <= 57) //Is switch?
                                             {
-                                                switch_num = saveData[i] - 48;
-                                                saveChar = switch_num + 50;
+                                                switch_num = loadData[i] - 48;
+                                                loadChar = switch_num + 50;
                                                 switches[switch_num] = false; //Set its power
                                                 placedSwitches[switch_num] = true; //Say it's placed
-                                            } else if (saveData[i] >= 97 && saveData[i] <= 122) { //Is label?
-                                                saveChar = saveData[i];
+                                            } else if (loadData[i] >= 97 && loadData[i] <= 122) { //Is label?
+                                                loadChar = loadData[i];
                                             }
-                                            board[x][y] = saveChar;
+                                            board[x][y] = loadChar;
                                             ++x;
                                         }
                                     }
