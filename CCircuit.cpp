@@ -2,7 +2,6 @@
 //Swap y and x throughout code
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
-//Rename 'powers' to 'switches'
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -15,39 +14,35 @@
 #include <vector>       //For use of vectors
 #include "keypresses.c" //For detecting keypresses: kbhit (), pressedCh
 
-typedef unsigned char byte;
-typedef unsigned int uint;
-typedef unsigned long ulong;
-
 const std::string SYSPATH = ""; //"/system/xbin"; //For BusyBox on Android
 
 std::string projName = "untitled";
 bool run = true;
 
-const uint boardW = 4096;
-const uint boardH = 4096;
-const uint boardWh = boardW / 2;
-const uint boardHh = boardH / 2;
+const uint32_t boardW = 4096;
+const uint32_t boardH = 4096;
+const uint32_t boardWh = boardW / 2;
+const uint32_t boardHh = boardH / 2;
 char board[boardH][boardW];
 int cursorX = 16;
 int cursorY = 8;
-const byte UNTILHYPER = 20;
-const byte HYPER = 2;
+const uint8_t UNTILHYPER = 20;
+const uint8_t HYPER = 2;
 
-byte powers[10];
-bool placedPowers[10];
-byte power;
+uint8_t switches[10];
+bool placedSwitches[10];
+uint8_t switch;
 
 int elecY = boardH, elecX = boardW, elecY2 = 0, elecX2 = 0; //Electric bounds
 
-const uint UNDOS = 512;
-uint undos[UNDOS][4]; //[u][y, x, was, now]
-uint canr = 0;
-uint u = 0;
+const uint32_t UNDOS = 512;
+uint32_t undos[UNDOS][4]; //[u][y, x, was, now]
+uint32_t canr = 0;
+uint32_t u = 0;
 
 bool copying, dataToPaste;
-uint copyY, copyX, copyY2, copyX2, copyYDist, copyXDist;
-uint pasteY, pasteX, pasteY2, pasteX2;
+uint32_t copyY, copyX, copyY2, copyX2, copyYDist, copyXDist;
+uint32_t pasteY, pasteX, pasteY2, pasteX2;
 std::vector<char> *copyData = new std::vector<char>();
 
 bool autoBridge = false;
@@ -57,18 +52,18 @@ bool fastMo = false;
 bool paused = false;
 bool labelMode = false; //Are we typing a label?
 
-uint screenH = 20; //The height of the screen
-uint screenW = 60; //The width of the screen
-uint screenHh = screenH / 2; //Half of the height of the screen
-uint screenWh = screenW / 2; //Half of the width of the screen
+uint32_t screenH = 20; //The height of the screen
+uint32_t screenW = 60; //The width of the screen
+uint32_t screenHh = screenH / 2; //Half of the height of the screen
+uint32_t screenWh = screenW / 2; //Half of the width of the screen
 
 
 void clearScreen () { std::cout << "\033[2J\033[1;1H"; }
 
 int boardCropX;
 int boardCropY;
-uint boardCropX2;
-uint boardCropY2;
+uint32_t boardCropX2;
+uint32_t boardCropY2;
 void calcBoardCrops () //For calculating the part of the board on the screen
 {
     boardCropX = cursorX - screenWh;
@@ -81,8 +76,8 @@ void calcBoardCrops () //For calculating the part of the board on the screen
     if (boardCropY2 > boardH) { boardCropY = boardH - screenH; boardCropY2 = boardH; }
 }
 
-uint lines;
-uint cols;
+uint32_t lines;
+uint32_t cols;
 void getTerminalDimensions ()
 {
     #ifdef TIOCGSIZE
@@ -156,13 +151,13 @@ void display ()
     buffer = "";
     clearScreen();
   //Top bar
-    uint barOffLen = 0;
+    uint32_t barOffLen = 0;
     buffer += "\033[0;37;40m"; //bg of bar
     barOffLen += 10;
     buffer += std::to_string(cursorX) + ", " + std::to_string(cursorY);
     buffer += " ";
-    for (uint i = 0; i < 10; ++i) {
-        buffer += "\033[37;40m " + (powers[i] ? "\033[30;42m" + std::to_string(i) : (placedPowers[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
+    for (uint32_t i = 0; i < 10; ++i) {
+        buffer += "\033[37;40m " + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placedSwitches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
         barOffLen += 16;
     }
     buffer += "\033[37;40m";
@@ -174,8 +169,8 @@ void display ()
     buffer += (paused ? "  paused" : "");
     buffer += (labelMode ? "  label mode" : "");
     std::string space = "";
-    uint sLen = screenW - (buffer.length() - barOffLen) - projName.length();
-    for (uint i = 0; i < sLen; ++i) { space += " "; }
+    uint32_t sLen = screenW - (buffer.length() - barOffLen) - projName.length();
+    for (uint32_t i = 0; i < sLen; ++i) { space += " "; }
     buffer += space + "\033[1;4m" + projName + "\033[0m";
   //Board
     int sy, sx;
@@ -283,8 +278,8 @@ void display ()
             }
             
             if (*look >= 50 && *look <= 59) { //Power
-                power = *look - 50;
-                buff = (powers[power] ? "\033[1;33;44m" + std::to_string(power) : "\033[1;31;47m" + std::to_string(power)) ; //Power switch
+                switch = *look - 50;
+                buff = (switches[switch] ? "\033[1;33;44m" + std::to_string(switch) : "\033[1;31;47m" + std::to_string(switch)) ; //Power switch
             }
             
             if (*look >= 97 && *look <= 122) { //Label
@@ -326,12 +321,12 @@ void display ()
 
 
 
-bool powerAtDir (int y, int x, byte dir, bool dead = false)
+bool powerAtDir (int y, int x, uint8_t dir, bool dead = false)
 {
     if (x < 0 || y < 0 || x >= boardW || y >= boardH) { return false; }
     char look = board[y][x];
-    byte diode;
-    byte wire;
+    uint8_t diode;
+    uint8_t wire;
     char xd = 0;
     char yd = 0;
     switch (dir) {
@@ -355,7 +350,7 @@ bool powerAtDir (int y, int x, byte dir, bool dead = false)
     bool powerPresent = false, powerOn = false;
     if (look >= 50 && look <= 59) {
         powerPresent = true;
-        powerOn = powers[look - 50];
+        powerOn = switches[look - 50];
     }
   //Return for if checking for dead
     if (dead) {
@@ -388,9 +383,9 @@ bool powerAtDir (int y, int x, byte dir, bool dead = false)
 }
 
 //Fix bounds checking
-byte nextToLives (int y, int x, byte mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
+uint8_t nextToLives (int y, int x, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
 {
-    byte lives = 0;
+    uint8_t lives = 0;
   //Check North
     if      (mode == 0 && powerAtDir(y - 1, x, NORTH, true)) { return 0; }
     else if (powerAtDir(y - 1, x, NORTH)) {
@@ -410,9 +405,9 @@ byte nextToLives (int y, int x, byte mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 
     return lives;
 }
 
-byte betweenLives (int y, int x)
+uint8_t betweenLives (int y, int x)
 {
-    byte lives = 0;
+    uint8_t lives = 0;
   //Check East
     if (powerAtDir(y, x + 1, EAST)) {
         ++lives;
@@ -428,12 +423,12 @@ byte betweenLives (int y, int x)
 struct Branch
 {
     int x, y;
-    byte d;
+    uint8_t d;
 };
 
 Branch branch[2048];
-uint branches = 0;
-int addBranch (int y, int x, byte prevDir)
+uint32_t branches = 0;
+int addBranch (int y, int x, uint8_t prevDir)
 {
     branch[branches].y = y;
     branch[branches].x = x;
@@ -441,7 +436,7 @@ int addBranch (int y, int x, byte prevDir)
     return branches++;
 }
 
-uint nextB;
+uint32_t nextB;
 void elec () //Electrify the board appropriately
 {
   //Reset the electrified
@@ -463,13 +458,13 @@ void elec () //Electrify the board appropriately
     bool skipped = false;
     while (moved) {
         moved = false;
-        uint prevB = 0;
-        for (uint b = 0; b < branches; ++b) {
+        uint32_t prevB = 0;
+        for (uint32_t b = 0; b < branches; ++b) {
             if (b != prevB) { skipped = false; }
             prevB = b;
             char *look = &board[branch[b].y][branch[b].x];
             if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_WALL || *look == PW_BIT || *look == PW_DELAY) { continue; }
-            byte *dir = &branch[b].d;
+            uint8_t *dir = &branch[b].d;
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
             else if (*look == UN_WIRE)   { *look = PW_WIRE; }    //Electrify wire
             else if (*look == UN_H_WIRE) { *look = PW_H_WIRE; }  //Electrify H Wire
@@ -541,7 +536,7 @@ void elec () //Electrify the board appropriately
             }
           //Wires (electric branches)
             bool canNorth = false, canEast = false, canSouth = false, canWest = false, canDoubleNorth = false, canDoubleEast = false, canDoubleSouth = false, canDoubleWest = false;
-            byte routes = 0;
+            uint8_t routes = 0;
             char ourPos = board[branch[b].y][branch[b].x];
             bool canV = (ourPos != UN_H_WIRE && ourPos != PW_H_WIRE);
             bool canH = (ourPos != UN_V_WIRE && ourPos != PW_V_WIRE);
@@ -607,7 +602,7 @@ void elec () //Electrify the board appropriately
                   //Check if we're in a line of AND's, and if they are currently being activated
                     bool leftPresent = false, leftAlive = false, rightPresent = false, rightAlive = false;
                   //Seek horiz RIGHT across a potential line of AND's
-                    uint tx = x + 1;
+                    uint32_t tx = x + 1;
                     while (tx < boardW && board[y][tx] == UN_AND || board[y][tx] == PW_AND) {
                         ++tx;
                     }
@@ -670,7 +665,7 @@ void elec () //Electrify the board appropriately
                 {
                   //Check if being reset
                   //Seek horiz RIGHT across a potential line of Bits
-                    uint tx = x;
+                    uint32_t tx = x;
                     while (tx < boardW && board[y][tx] == UN_BIT || board[y][tx] == PW_BIT) {
                         ++tx;
                     }
@@ -678,7 +673,7 @@ void elec () //Electrify the board appropriately
                         board[y][x] = UN_BIT;
                     } else {
                       //Seek horiz LEFT across a potential line of Bits
-                        uint tx = x;
+                        uint32_t tx = x;
                         while (tx > 0 && board[y][tx] == UN_BIT || board[y][tx] == PW_BIT) {
                             --tx;
                         }
@@ -727,9 +722,9 @@ void elec () //Electrify the board appropriately
                 default:
                   //There's nothing here which could unpower a Delay
                     unpowerDelay = false;
-                  //Powers
+                  //switches
                     if (board[y][x] >= 50 && board[y][x] <= 59) {
-                        if (powers[board[y][x] - 50]) {
+                        if (switches[board[y][x] - 50]) {
                             addBranch(y, x, NODIR);
                             unpowerDelay = false;
                         }
@@ -778,9 +773,9 @@ std::string getInput (std::string defau = "")
 }
 
 
-uint startLabelX; //Label's X
+uint32_t startLabelX; //Label's X
 char lDirY, lDirX, prevZ, prevMove, prevMoveCount, elecCounter;
-uint prevX, prevY;
+uint32_t prevX, prevY;
 int main ()
 {
   //Load shite to listen to pressed keys
@@ -794,7 +789,7 @@ int main ()
               << "\na\t\ttoggle general use wire/directional wire"
               << "\nfF\t\tcrosshairs, goto coord"
               << "\n0-9\t\tplace/toggle switch"
-              << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, power"
+              << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, switch"
               << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
               << "\nb\t\tplace bit"
               << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
@@ -816,7 +811,7 @@ int main ()
         display();
         if (!paused) {
             if (elecCounter >= (slowMo ? 10 : 1)) { elecCounter = 0; elec(); }
-            if (fastMo) { for (uint i = 0; i < 8; ++i) { elec(); } }
+            if (fastMo) { for (uint32_t i = 0; i < 8; ++i) { elec(); } }
             ++elecCounter;
         }
         while (kbhit()) {
@@ -834,7 +829,7 @@ int main ()
                 prevMove = EAST;
             } else {
                 bool elecReCalc = false;
-                byte moveDist = (prevMoveCount == UNTILHYPER ? HYPER : 1);
+                uint8_t moveDist = (prevMoveCount == UNTILHYPER ? HYPER : 1);
                 switch (pressedCh) {
                     case '>': //Page up
                         moveDist = screenH / 2;
@@ -881,8 +876,8 @@ int main ()
                         prevMove = WEST;
                         look = &board[cursorY][cursorX];
                     case ' ': //Remove
-                        if (*look == 50 + power) { //If on top of a power, remove it correctly
-                            placedPowers[power] = false;
+                        if (*look == 50 + switch) { //If on top of a switch, remove it correctly
+                            placedSwitches[switch] = false;
                             toMove = true;
                         }
                         *look = EMPTY;
@@ -1086,7 +1081,7 @@ int main ()
                             cYend = cursorY + copyYDist;
                             cXend = cursorX + copyXDist;
                             if (pressedCh != 'j') { //Paste copy data onto the board
-                                uint i = 0;
+                                uint32_t i = 0;
                                 if (pressedCh == 'K') { //Swap
                                     for (int y = copyY, y2 = cursorY; y < copyY2; ++y, ++y2) {
                                         for (int x = copyX, x2 = cursorX; x < copyX2; ++x, ++x2) {
@@ -1119,7 +1114,7 @@ int main ()
                                     if (pressedCh == 'B') { //Unelectrified
                                         for (int y = cursorY; y < cYend; ++y) {
                                             for (int x = cursorX; x < cXend; ++x) {
-                                                byte c = copyData->at(i);
+                                                uint8_t c = copyData->at(i);
                                                 switch (c) {
                                                     case P3_STRETCH: case P2_STRETCH: case P1_STRETCH: c = U1_STRETCH; break;
                                                     case PW_WIRE: case PW_BRIDGE: case PW_BIT: case PW_N_DIODE: case PW_DELAY: case PW_E_DIODE: case PW_S_DIODE: case PW_W_DIODE: case PW_H_WIRE: case PW_V_WIRE:
@@ -1211,7 +1206,7 @@ int main ()
                                             case UN_H_WIRE: case PW_H_WIRE:      saveData += '-'; break;
                                             case UN_V_WIRE: case PW_V_WIRE:      saveData += '|'; break;
                                         }
-                                        if (board[y][x] >= 50 && board[y][x] <= 59) { //Is power?
+                                        if (board[y][x] >= 50 && board[y][x] <= 59) { //Is switch?
                                             saveData += board[y][x] - 2;
                                         } else if (board[y][x] >= 97 && board[y][x] <= 122) { //Is label?
                                             saveData += board[y][x];
@@ -1247,11 +1242,11 @@ int main ()
                                 std::cout << "Loading..." << std::endl;
                                 memset(board, 0, sizeof(board[0][0]) * boardH * boardW); //Set the board Empty
                                 projName = load;
-                                ulong len = saveData.length();
+                                uint64_t len = saveData.length();
                                 if (len > 0) {
-                                    byte saveChar;
+                                    uint8_t saveChar;
                                     int y = 0, x = 0, maxX = 0;
-                                    for (uint i = 0; i < len; ++i) {
+                                    for (uint32_t i = 0; i < len; ++i) {
                                         if (saveData[i] == '\n') {
                                             ++y;
                                             maxX = x;
@@ -1278,12 +1273,12 @@ int main ()
                                                 case '-': saveChar = UN_H_WIRE;  break;
                                                 case '|': saveChar = UN_V_WIRE;  break;
                                             }
-                                            if (saveData[i] >= 48 && saveData[i] <= 57) //Is power?
+                                            if (saveData[i] >= 48 && saveData[i] <= 57) //Is switch?
                                             {
-                                                power = saveData[i] - 48;
-                                                saveChar = power + 50;
-                                                powers[power] = false; //Set its power
-                                                placedPowers[power] = true; //Say it's placed
+                                                switch = saveData[i] - 48;
+                                                saveChar = switch + 50;
+                                                switches[switch] = false; //Set its power
+                                                placedSwitches[switch] = true; //Say it's placed
                                             } else if (saveData[i] >= 97 && saveData[i] <= 122) { //Is label?
                                                 saveChar = saveData[i];
                                             }
@@ -1294,8 +1289,8 @@ int main ()
                                     elecY = 0; elecX = 0;
                                     elecY2 = y - 1; elecX2 = maxX - 1;
                                   //Turn off all Switches
-                                    for (uint i = 0; i < 10; ++i) {
-                                        powers[i] = false;
+                                    for (uint32_t i = 0; i < 10; ++i) {
+                                        switches[i] = false;
                                     }
                                   //Remove all previous electricity
                                     memset(branch, 0, sizeof(branch));
@@ -1341,25 +1336,25 @@ int main ()
                         break;
                 }
                 if (pressedCh >= 48 && pressedCh <= 57) { //Power button
-                    power = pressedCh - 48;
-                    if (placedPowers[power]) { //Is the power already placed? Power it
+                    switch = pressedCh - 48;
+                    if (placedSwitches[switch]) { //Is the switch already placed? Power it
                         bool found = false;
                         for (int y = 0; y < boardH; ++y)
                         {
                             for (int x = 0; x < boardW; ++x)
                             {
-                                if (board[y][x] == 50 + power) { found = true; }
+                                if (board[y][x] == 50 + switch) { found = true; }
                             }
                         }
                         if (found) { //But was it reaaaaaaally placed? It could have been overwrote
-                            powers[power] = !powers[power];
+                            switches[switch] = !switches[switch];
                         } else {
-                            placedPowers[power] = false; //Mark it as non-existant
+                            placedSwitches[switch] = false; //Mark it as non-existant
                         }
                     } else { //No? Place it
-                        *look = 50 + power;
-                        powers[power] = false;
-                        placedPowers[power] = true;
+                        *look = 50 + switch;
+                        switches[switch] = false;
+                        placedSwitches[switch] = true;
                         toMove = true;
                     }
                 }
