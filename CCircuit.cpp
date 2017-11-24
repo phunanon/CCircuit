@@ -26,8 +26,6 @@ const uint32_t boardHh = boardH / 2;
 char board[boardW][boardH];
 int32_t cursorX = 16;
 int32_t cursorY = 8;
-const uint8_t UNTILHYPER = 20;
-const uint8_t HYPER = 2;
 
 uint8_t switches[10];
 bool placedSwitches[10];
@@ -774,7 +772,7 @@ std::string getInput (std::string defau = "")
 
 
 uint32_t startLabelX; //Label's X
-char lDirX, lDirY, prevZ, prevMove, prevMoveCount, elecCounter;
+char lDirX, lDirY, prevZ, elecCounter;
 uint32_t prevX, prevY;
 int32_t main ()
 {
@@ -784,7 +782,7 @@ int32_t main ()
               << "\nINSTRUCTIONS"
               << "\n[space]\t\tremove anything"
               << "\n.oeu\t\tup, left, down, right"
-              << "\n>OEU\t\tpage up, page left, page down, page right"
+              << "\n>OEU\t\tfar up, far left, far down, far right"
               << "\nhH\t\tplace wire, toggle auto-bridge for wires and diodes"
               << "\na\t\ttoggle general use wire/directional wire"
               << "\nfF\t\tcrosshairs, goto coord"
@@ -826,42 +824,37 @@ int32_t main ()
                 if (cursorX + 1 < boardW) { ++cursorX; }
                 lDirY = lDirX = 0;
                 lDirX = 1;
-                prevMove = EAST;
             } else {
                 bool elecReCalc = false;
-                uint8_t moveDist = (prevMoveCount == UNTILHYPER ? HYPER : 1);
+                uint8_t moveDist = 1;
                 switch (pressedCh) {
-                    case '>': //Page up
-                        moveDist = screenH / 4;
+                    case '>': //Far up
+                        moveDist = 8;
                     case '.': //Up
                         if (cursorY - moveDist >= 0) { cursorY -= moveDist; }
                         lDirY = lDirX = 0;
                         lDirY = -1;
-                        prevMove = NORTH;
                         break;
-                    case 'U': //Page right
-                        moveDist = screenW / 4;
+                    case 'U': //Far right
+                        moveDist = 16;
                     case 'u': //Right
                         if (cursorX + moveDist < boardW) { cursorX += moveDist; }
                         lDirY = lDirX = 0;
                         lDirX = 1;
-                        prevMove = EAST;
                         break;
-                    case 'E': //Page down
-                        moveDist = screenH / 4;
+                    case 'E': //Far down
+                        moveDist = 8;
                     case 'e': //Down
                         if (cursorY + moveDist < boardH) { cursorY += moveDist; }
                         lDirY = lDirX = 0;
                         lDirY = 1;
-                        prevMove = SOUTH;
                         break;
-                    case 'O': //Page right
-                        moveDist = screenW / 4;
+                    case 'O': //Far right
+                        moveDist = 16;
                     case 'o': //Left
                         if (cursorX - moveDist >= 0) { cursorX -= moveDist; }
                         lDirY = lDirX = 0;
                         lDirX = -1;
-                        prevMove = WEST;
                         break;
                     case '\n':
                         if (labelMode) {
@@ -873,7 +866,6 @@ int32_t main ()
                         if (cursorX > 0) { --cursorX; }
                         lDirY = lDirX = 0;
                         lDirX = -1;
-                        prevMove = WEST;
                         look = &board[cursorX][cursorY];
                     case ' ': //Remove
                         if (*look == 50 + switch_num) { //If on top of a switch, remove it correctly
@@ -1410,18 +1402,10 @@ int32_t main ()
                     cursorX = copyX;
                     cursorY = copyY;
                 }
-              //See if we've moved enough in one direction to make the user move twice as fast
-                if      (prevMove == NORTH && lDirY == -1) { ++prevMoveCount; }
-                else if (prevMove == EAST && lDirX == 1)  { ++prevMoveCount; }
-                else if (prevMove == SOUTH && lDirY == 1)  { ++prevMoveCount; }
-                else if (prevMove == WEST && lDirX == -1) { ++prevMoveCount; }
-                else { prevMoveCount = 0; }
-                if (prevMoveCount > UNTILHYPER) { prevMoveCount = UNTILHYPER; }
             }
         }
       //Sleep
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        prevMoveCount -= (prevMoveCount > 0);
     }
     return 0;
 }
