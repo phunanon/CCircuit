@@ -23,7 +23,7 @@ const uint32_t boardW = 4096;
 const uint32_t boardH = 4096;
 const uint32_t boardWh = boardW / 2;
 const uint32_t boardHh = boardH / 2;
-char board[boardH][boardW];
+char board[boardW][boardH];
 int cursorX = 16;
 int cursorY = 8;
 const uint8_t UNTILHYPER = 20;
@@ -33,16 +33,16 @@ uint8_t switches[10];
 bool placedSwitches[10];
 uint8_t switch_num;
 
-int elecY = boardH, elecX = boardW, elecY2 = 0, elecX2 = 0; //Electric bounds
+int elecX = boardW, elecY = boardH, elecX2 = 0, elecY2 = 0; //Electric bounds
 
 const uint32_t UNDOS = 512;
-uint32_t undos[UNDOS][4]; //[u][y, x, was, now]
+uint32_t undos[UNDOS][4]; //[u][x, y, was, now]
 uint32_t canr = 0;
 uint32_t u = 0;
 
 bool copying, dataToPaste;
-uint32_t copyY, copyX, copyY2, copyX2, copyYDist, copyXDist;
-uint32_t pasteY, pasteX, pasteY2, pasteX2;
+uint32_t copyX, copyY, copyX2, copyY2, copyXDist, copyYDist;
+uint32_t pasteX, pasteY, pasteX2, pasteY2;
 std::vector<char> *copyData = new std::vector<char>();
 
 bool autoBridge = false;
@@ -52,10 +52,10 @@ bool fastMo = false;
 bool paused = false;
 bool labelMode = false; //Are we typing a label?
 
-uint32_t screenH = 20; //The height of the screen
 uint32_t screenW = 60; //The width of the screen
-uint32_t screenHh = screenH / 2; //Half of the height of the screen
+uint32_t screenH = 20; //The height of the screen
 uint32_t screenWh = screenW / 2; //Half of the width of the screen
+uint32_t screenHh = screenH / 2; //Half of the height of the screen
 
 
 void clearScreen () { std::cout << "\033[2J\033[1;1H"; }
@@ -173,15 +173,15 @@ void display ()
     for (int32_t i = 0; i < sLen; ++i) { space += " "; }
     buffer += space + "\033[1;4m" + projName + "\033[0m";
   //Board
-    int sy, sx;
+    int sx, sy;
     for (int y = boardCropY, sy = 0; y < boardCropY2; ++y, ++sy) {
         buffer += '\n';
         for (int x = boardCropX, sx = 0; x < boardCropX2; ++x, ++sx) {
             buff = " ";
-            char *look = &board[y][x];
+            char *look = &board[x][y];
             switch (*look) {
                 case EMPTY:
-                    buff = (y >= elecY && y < elecY2 + 1 && x >= elecX && x < elecX2 + 1 ? "\033[0;30;47m " : "\033[0;30;47m."); //Nothing
+                    buff = (x >= elecX && x < elecX2 + 1 && y >= elecY && y < elecY2 + 1 ? "\033[0;30;47m " : "\033[0;30;47m."); //Nothing
                     break;
                 case UN_WIRE:
                     buff = "\033[0;30;47m#"; //Unpowered Wire
@@ -288,26 +288,26 @@ void display ()
 
             if (copying) { //Copy box
                 if (y == copyY - 1 && x >= copyX - 1 && x <= cursorX)    { buff = "\033[1;30;46mx"; } //North
-                if (x == cursorX && y >= copyY - 1 && y <= cursorY)        { buff = "\033[1;30;46mx"; } //East
-                if (y == cursorY && x >= copyX - 1 && x <= cursorX)        { buff = "\033[1;30;46mx"; } //South
+                if (x == cursorX && y >= copyY - 1 && y <= cursorY)      { buff = "\033[1;30;46mx"; } //East
+                if (y == cursorY && x >= copyX - 1 && x <= cursorX)      { buff = "\033[1;30;46mx"; } //South
                 if (x == copyX - 1 && y >= copyY - 1 && y <= cursorY)    { buff = "\033[1;30;46mx"; } //West
             }
             if (dataToPaste) {
               //Copy markers
-                if ((y == copyY && x == copyX) || (y == copyY && x == copyX2 - 1) || (y == copyY2 - 1 && x == copyX) || (y == copyY2 - 1 && x == copyX2 - 1)) {
+                if ((x == copyX && y == copyY) || (x == copyX2 - 1 && y == copyY) || (x == copyX && y == copyY2 - 1) || (x == copyX2 - 1 && y == copyY2 - 1)) {
                     buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Pasted markers
-                else if ((y == pasteY && x == pasteX) || (y == pasteY && x == pasteX2 - 1) || (y == pasteY2 - 1 && x == pasteX) || (y == pasteY2 - 1 && x == pasteX2 - 1)) {
+                else if ((x == pasteX && y == pasteY) || (x == pasteX2 - 1 && y == pasteY) || (x == pasteX && y == pasteY2 - 1) || (x == pasteX2 - 1 && y == pasteY2 - 1)) {
                     buff = "\033[30;43m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Paste area
-                else if ((y >= cursorY && y < cursorY + copyYDist && x >= cursorX && x < cursorX + copyXDist)) {
+                else if (x >= cursorX && x < cursorX + copyXDist && y >= cursorY && y < cursorY + copyYDist) {
                     buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
                 }
             }
           //Crosshairs and cursor
-            if ((crosshairs && (y == cursorY || x == cursorX)) || (y == cursorY && x == cursorX) || (sy == 0 && x == cursorX) || (sy == screenH - 1 && x == cursorX) || (y == cursorY && sx == 0) || (y == cursorY && sx == screenW - 1)) {
+            if ((crosshairs && (x == cursorX || y == cursorY)) || (x == cursorX && y == cursorY) || (x == cursorX && sy == 0) || (x == cursorX && sy == screenH - 1) || (sx == 0 && y == cursorY) || (sx == screenW - 1 && y == cursorY)) {
                 buff = buff.substr(buff.length() - 1, buff.length());
                 buff = "\033[0;37;4" + std::string(dataToPaste ? "6" : "0") + "m" + buff;
             }
@@ -321,10 +321,10 @@ void display ()
 
 
 
-bool powerAtDir (int y, int x, uint8_t dir, bool dead = false)
+bool powerAtDir (int x, int y, uint8_t dir, bool dead = false)
 {
     if (x < 0 || y < 0 || x >= boardW || y >= boardH) { return false; }
-    char look = board[y][x];
+    char look = board[x][y];
     uint8_t diode;
     uint8_t wire;
     char xd = 0;
@@ -340,13 +340,13 @@ bool powerAtDir (int y, int x, uint8_t dir, bool dead = false)
       //Check this Powered Bridge is powered in this direction
         x += xd;
         y += yd;
-        while (board[y][x] == PW_BRIDGE) { //Seek along the Bridge
+        while (board[x][y] == PW_BRIDGE) { //Seek along the Bridge
             x += xd;
             y += yd;
         }
         //Reached the end of the bridges
     }
-    look = board[y][x];
+    look = board[x][y];
     bool powerPresent = false, powerOn = false;
     if (look >= 50 && look <= 59) {
         powerPresent = true;
@@ -383,37 +383,37 @@ bool powerAtDir (int y, int x, uint8_t dir, bool dead = false)
 }
 
 //Fix bounds checking
-uint8_t nextToLives (int y, int x, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
+uint8_t nextToLives (int x, int y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
 {
     uint8_t lives = 0;
   //Check North
-    if      (mode == 0 && powerAtDir(y - 1, x, NORTH, true)) { return 0; }
-    else if (powerAtDir(y - 1, x, NORTH)) {
+    if      (mode == 0 && powerAtDir(x, y - 1, NORTH, true)) { return 0; }
+    else if (powerAtDir(x, y - 1, NORTH)) {
         ++lives;
     }
   //Check East
-    if      (mode == 0 && powerAtDir(y, x + 1, EAST, true)) { return 0; }
-    else if (powerAtDir(y, x + 1, EAST)) {
+    if      (mode == 0 && powerAtDir(x + 1, y, EAST, true)) { return 0; }
+    else if (powerAtDir(x + 1, y, EAST)) {
         ++lives;
     }
   //Check West
-    if      (mode == 0 && powerAtDir(y, x - 1, WEST, true)) { return 0; }
-    else if (powerAtDir(y, x - 1, WEST)) {
+    if      (mode == 0 && powerAtDir(x - 1, y, WEST, true)) { return 0; }
+    else if (powerAtDir(x - 1, y, WEST)) {
         ++lives;
     }
   //Return
     return lives;
 }
 
-uint8_t betweenLives (int y, int x)
+uint8_t betweenLives (int x, int y)
 {
     uint8_t lives = 0;
   //Check East
-    if (powerAtDir(y, x + 1, EAST)) {
+    if (powerAtDir(x + 1, y, EAST)) {
         ++lives;
     }
   //Check West
-    if (powerAtDir(y, x - 1, WEST)) {
+    if (powerAtDir(x - 1, y, WEST)) {
         ++lives;
     }
   //Return
@@ -428,10 +428,10 @@ struct Branch
 
 Branch branch[2048];
 uint32_t branches = 0;
-int addBranch (int y, int x, uint8_t prevDir)
+int addBranch (int x, int y, uint8_t prevDir)
 {
-    branch[branches].y = y;
     branch[branches].x = x;
+    branch[branches].y = y;
     branch[branches].d = prevDir; //0: none, NESW
     return branches++;
 }
@@ -440,9 +440,9 @@ uint32_t nextB;
 void elec () //Electrify the board appropriately
 {
   //Reset the electrified
-    for (int y = elecY; y <= elecY2; ++y) {
-        for (int x = elecX; x <= elecX2; ++x) {
-            char *look = &board[y][x];
+    for (int x = elecX; x <= elecX2; ++x) {
+        for (int y = elecY; y <= elecY2; ++y) {
+            char *look = &board[x][y];
             if      (*look == PW_WIRE)    { *look = UN_WIRE; }    //Powered Wire to Wire
             else if (*look == PW_H_WIRE)  { *look = UN_H_WIRE;  } //Powered H Wire to H Wire
             else if (*look == PW_V_WIRE)  { *look = UN_V_WIRE;  } //Powered V Wire to V Wire
@@ -462,7 +462,7 @@ void elec () //Electrify the board appropriately
         for (uint32_t b = 0; b < branches; ++b) {
             if (b != prevB) { skipped = false; }
             prevB = b;
-            char *look = &board[branch[b].y][branch[b].x];
+            char *look = &board[branch[b].x][branch[b].y];
             if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_WALL || *look == PW_BIT || *look == PW_DELAY) { continue; }
             uint8_t *dir = &branch[b].d;
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
@@ -537,29 +537,29 @@ void elec () //Electrify the board appropriately
           //Wires (electric branches)
             bool canNorth = false, canEast = false, canSouth = false, canWest = false, canDoubleNorth = false, canDoubleEast = false, canDoubleSouth = false, canDoubleWest = false;
             uint8_t routes = 0;
-            char ourPos = board[branch[b].y][branch[b].x];
+            char ourPos = board[branch[b].x][branch[b].y];
             bool canV = (ourPos != UN_H_WIRE && ourPos != PW_H_WIRE);
             bool canH = (ourPos != UN_V_WIRE && ourPos != PW_V_WIRE);
             if (canV && *dir != SOUTH && branch[b].y > 0)      { //North
-                char *look = &board[branch[b].y - 1][branch[b].x];
+                char *look = &board[branch[b].x][branch[b].y - 1];
                 if (*look == UN_WIRE || *look == UN_N_DIODE)       { ++routes; canNorth = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; canNorth = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; canDoubleNorth = true; *look = PW_BRIDGE; }
             }
             if (canV && *dir != NORTH && branch[b].y < boardH) { //South
-                char *look = &board[branch[b].y + 1][branch[b].x];
+                char *look = &board[branch[b].x][branch[b].y + 1];
                 if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; canSouth = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; canSouth = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; canDoubleSouth = true; *look = PW_BRIDGE; }
             }
             if (canH && *dir != WEST && branch[b].x < boardW) { //East
-                char *look = &board[branch[b].y][branch[b].x + 1];
+                char *look = &board[branch[b].x + 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_E_DIODE)       { ++routes; canEast = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; canEast = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; canDoubleEast = true; *look = PW_BRIDGE; }
             }
             if (canH && *dir != EAST && branch[b].x > 0)      { //West
-                char *look = &board[branch[b].y][branch[b].x - 1];
+                char *look = &board[branch[b].x - 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_W_DIODE)       { ++routes; canWest = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; canWest = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; canDoubleWest = true; *look = PW_BRIDGE; }
@@ -570,7 +570,7 @@ void elec () //Electrify the board appropriately
             } else {
                 moved = true;
                 do {
-                    if (routes == 1) { nextB = b; } else { nextB = addBranch(branch[b].y, branch[b].x, NORTH); }
+                    if (routes == 1) { nextB = b; } else { nextB = addBranch(branch[b].x, branch[b].y, NORTH); }
                   //Move new branch onto next wire
                          if (canNorth)       { --branch[nextB].y;       branch[nextB].d = NORTH;    canNorth = false;       }
                     else if (canEast)        { ++branch[nextB].x;       branch[nextB].d = EAST;     canEast = false;        }
@@ -589,10 +589,10 @@ void elec () //Electrify the board appropriately
     memset(branch, 0, sizeof(branch)); //Remove all existing branches
     branches = 0;
   //Components
-    for (int y = elecY2; y >= elecY; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
-        for (int x = elecX; x <= elecX2; ++x) {
+    for (int x = elecX; x <= elecX2; ++x) {
+        for (int y = elecY2; y >= elecY; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
             bool unpowerDelay = true; //Unpower potential Delay below us?
-            switch (board[y][x]) {
+            switch (board[x][y]) {
                 case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: //Unpowered Wire/V Wire/Delay/Bridge
                    //Just here to unpower a Delay
                    break;
@@ -603,24 +603,24 @@ void elec () //Electrify the board appropriately
                     bool leftPresent = false, leftAlive = false, rightPresent = false, rightAlive = false;
                   //Seek horiz RIGHT across a potential line of AND's
                     uint32_t tx = x + 1;
-                    while (tx < boardW && board[y][tx] == UN_AND || board[y][tx] == PW_AND) {
+                    while (tx < boardW && board[tx][y] == UN_AND || board[tx][y] == PW_AND) {
                         ++tx;
                     }
-                    rightAlive   = powerAtDir(y, tx, EAST); //Is the line powered?
-                    rightPresent = powerAtDir(y, tx, EAST, true) || rightAlive; //Is there something which could invalidate the AND (e.g. an off wire)?
+                    rightAlive   = powerAtDir(tx, y, EAST); //Is the line powered?
+                    rightPresent = powerAtDir(tx, y, EAST, true) || rightAlive; //Is there something which could invalidate the AND (e.g. an off wire)?
                   //Seek horiz LEFT across a potential line of AND's
                     tx = x - 1;
-                    while (tx > 0 && board[y][tx] == UN_AND || board[y][tx] == PW_AND) {
+                    while (tx > 0 && board[tx][y] == UN_AND || board[tx][y] == PW_AND) {
                         --tx;
                     }
-                    leftAlive   = powerAtDir(y, tx, WEST); //Is the line powered?
-                    leftPresent = powerAtDir(y, tx, WEST, true) || leftAlive; //Is there something which could invalidate the AND (e.g. an off wire)?
+                    leftAlive   = powerAtDir(tx, y, WEST); //Is the line powered?
+                    leftPresent = powerAtDir(tx, y, WEST, true) || leftAlive; //Is there something which could invalidate the AND (e.g. an off wire)?
                   //Check AND conditions
-                    board[y][x] = UN_AND;
+                    board[x][y] = UN_AND;
                     if ((leftPresent || rightPresent) && (leftPresent ? leftAlive : true) && (rightPresent ? rightAlive : true)) { //Are our flanks completely powered?
-                        if (powerAtDir(y - 1, x, NORTH) || (!powerAtDir(y - 1, x, NORTH, true) && leftAlive && rightAlive)) { //Are we powered from above; or is there nothing dead above us, and we have both flanks available?
-                            board[y][x] = PW_AND;
-                            addBranch(y + 1, x, SOUTH);
+                        if (powerAtDir(x, y - 1, NORTH) || (!powerAtDir(x, y - 1, NORTH, true) && leftAlive && rightAlive)) { //Are we powered from above; or is there nothing dead above us, and we have both flanks available?
+                            board[x][y] = PW_AND;
+                            addBranch(x, y + 1, SOUTH);
                             unpowerDelay = false;
                         }
                     }
@@ -628,36 +628,36 @@ void elec () //Electrify the board appropriately
                 }
                 case UN_NOT: //NOT
                 case PW_NOT: //Powered NOT
-                    if (!nextToLives(y, x, 2)) {
-                        board[y][x] = UN_NOT;
-                        addBranch(y + 1, x, SOUTH);
+                    if (!nextToLives(x, y, 2)) {
+                        board[x][y] = UN_NOT;
+                        addBranch(x, y + 1, SOUTH);
                         unpowerDelay = false;
                     } else {
-                        board[y][x] = PW_NOT;
+                        board[x][y] = PW_NOT;
                     }
                     break;
                 case UN_XOR: //XOR
                 case PW_XOR: //Powered XOR
-                    if (nextToLives(y, x, 3) == 1) {
-                        board[y][x] = PW_XOR;
-                        addBranch(y + 1, x, SOUTH);
+                    if (nextToLives(x, y, 3) == 1) {
+                        board[x][y] = PW_XOR;
+                        addBranch(x, y + 1, SOUTH);
                         unpowerDelay = false;
                     } else {
-                        board[y][x] = UN_XOR;
+                        board[x][y] = UN_XOR;
                     }
                     break;
                 case PW_POWER: //Power
-                    addBranch(y, x, NODIR);
+                    addBranch(x, y, NODIR);
                     unpowerDelay = false;
                     break;
                 case PW_N_DIODE: //Powered North Diode
-                    if (y - 2 < boardH && (board[y - 1][x] == UN_E_DIODE || board[y - 1][x] == PW_E_DIODE || board[y - 1][x] == UN_W_DIODE || board[y - 1][x] == PW_W_DIODE) && (board[y - 2][x] == UN_N_DIODE || board[y - 2][x] == PW_N_DIODE)) { //If there's another North Diode yonder a horizontal Diode, skip to it
-                        addBranch(y - 2, x, NORTH);
+                    if (y - 2 < boardH && (board[x][y - 1] == UN_E_DIODE || board[x][y - 1] == PW_E_DIODE || board[x][y - 1] == UN_W_DIODE || board[x][y - 1] == PW_W_DIODE) && (board[x][y - 2] == UN_N_DIODE || board[x][y - 2] == PW_N_DIODE)) { //If there's another North Diode yonder a horizontal Diode, skip to it
+                        addBranch(x, y - 2, NORTH);
                     }
                     break;
                 case PW_S_DIODE: //Powered South Diode
-                    if (y + 2 < boardH && (board[y + 1][x] == UN_E_DIODE || board[y + 1][x] == PW_E_DIODE || board[y + 1][x] == UN_W_DIODE || board[y + 1][x] == PW_W_DIODE) && (board[y + 2][x] == UN_S_DIODE || board[y + 2][x] == PW_S_DIODE)) { //If there's another South Diode yonder a horizontal Diode, skip to it
-                        addBranch(y + 2, x, SOUTH);
+                    if (y + 2 < boardH && (board[x][y + 1] == UN_E_DIODE || board[x][y + 1] == PW_E_DIODE || board[x][y + 1] == UN_W_DIODE || board[x][y + 1] == PW_W_DIODE) && (board[x][y + 2] == UN_S_DIODE || board[x][y + 2] == PW_S_DIODE)) { //If there's another South Diode yonder a horizontal Diode, skip to it
+                        addBranch(x, y + 2, SOUTH);
                     }
                     unpowerDelay = false;
                     break;
@@ -666,22 +666,22 @@ void elec () //Electrify the board appropriately
                   //Check if being reset
                   //Seek horiz RIGHT across a potential line of Bits
                     uint32_t tx = x;
-                    while (tx < boardW && board[y][tx] == UN_BIT || board[y][tx] == PW_BIT) {
+                    while (tx < boardW && board[tx][y] == UN_BIT || board[tx][y] == PW_BIT) {
                         ++tx;
                     }
-                    if (powerAtDir(y, tx, EAST)) {
-                        board[y][x] = UN_BIT;
+                    if (powerAtDir(tx, y, EAST)) {
+                        board[x][y] = UN_BIT;
                     } else {
                       //Seek horiz LEFT across a potential line of Bits
                         uint32_t tx = x;
-                        while (tx > 0 && board[y][tx] == UN_BIT || board[y][tx] == PW_BIT) {
+                        while (tx > 0 && board[tx][y] == UN_BIT || board[tx][y] == PW_BIT) {
                             --tx;
                         }
-                        if (powerAtDir(y, tx, WEST)) {
-                            board[y][x] = UN_BIT;
+                        if (powerAtDir(tx, y, WEST)) {
+                            board[x][y] = UN_BIT;
                         } else {
-                            if (board[y][x] == PW_BIT) { //If already set
-                                addBranch(y + 1, x, SOUTH);
+                            if (board[x][y] == PW_BIT) { //If already set
+                                addBranch(x, y + 1, SOUTH);
                                 unpowerDelay = false;
                             }
                         }
@@ -690,20 +690,20 @@ void elec () //Electrify the board appropriately
                 }
                 case UN_DELAY: //Delay
                   //Check if we should be powered
-                    if (powerAtDir(y - 1, x, NORTH)) {
-                        board[y][x] = PW_DELAY;
-                        if (y < boardH && board[y + 1][x] != UN_DELAY) {
-                            addBranch(y + 1, x, SOUTH);
+                    if (powerAtDir(x, y - 1, NORTH)) {
+                        board[x][y] = PW_DELAY;
+                        if (board[x][y + 1] != UN_DELAY && y < boardH) {
+                            addBranch(x, y + 1, SOUTH);
                         }
                         unpowerDelay = false;
                     }
                     break;
                 case PW_DELAY: //Powered Delay
                   //Check if we should be unpowered
-                    if (powerAtDir(y - 1, x, NORTH, true)) {
-                        board[y][x] = UN_DELAY;
+                    if (powerAtDir(x, y - 1, NORTH, true)) {
+                        board[x][y] = UN_DELAY;
                     } else {
-                        addBranch(y + 1, x, SOUTH);
+                        addBranch(x, y + 1, SOUTH);
                     }
                     unpowerDelay = false;
                     break;
@@ -711,11 +711,11 @@ void elec () //Electrify the board appropriately
                 case P2_STRETCH: //
                 case P3_STRETCH: // Powered Stretcher
                   //Check if we should be unpowered
-                    if (!powerAtDir(y - 1, x, NORTH)) {
-                        --board[y][x];
+                    if (!powerAtDir(x, y - 1, NORTH)) {
+                        --board[x][y];
                     }
-                    if (board[y][x] > P1_STRETCH) {
-                        addBranch(y + 1, x, SOUTH);
+                    if (board[x][y] > P1_STRETCH) {
+                        addBranch(x, y + 1, SOUTH);
                         unpowerDelay = false;
                     }
                     break;
@@ -723,17 +723,17 @@ void elec () //Electrify the board appropriately
                   //There's nothing here which could unpower a Delay
                     unpowerDelay = false;
                   //switches
-                    if (board[y][x] >= 50 && board[y][x] <= 59) {
-                        if (switches[board[y][x] - 50]) {
-                            addBranch(y, x, NODIR);
+                    if (board[x][y] >= 50 && board[x][y] <= 59) {
+                        if (switches[board[x][y] - 50]) {
+                            addBranch(x, y, NODIR);
                             unpowerDelay = false;
                         }
                     }
                     break;
             }
             if (unpowerDelay) {
-                if (y + 1 < boardH && board[y + 1][x] == PW_DELAY) { //If there's a Powered Delay beneath us, make it unpowered
-                    board[y + 1][x] = UN_DELAY;
+                if (board[x][y + 1] == PW_DELAY && y + 1 < boardH) { //If there's a Powered Delay beneath us, make it unpowered
+                    board[x][y + 1] = UN_DELAY;
                 }
             }
         }
@@ -774,7 +774,7 @@ std::string getInput (std::string defau = "")
 
 
 uint32_t startLabelX; //Label's X
-char lDirY, lDirX, prevZ, prevMove, prevMoveCount, elecCounter;
+char lDirX, lDirY, prevZ, prevMove, prevMoveCount, elecCounter;
 uint32_t prevX, prevY;
 int main ()
 {
@@ -816,9 +816,9 @@ int main ()
         }
         while (kbhit()) {
             bool toMove = false; //Should we auto-move after pressing?
-            char *look = &board[cursorY][cursorX];
-            prevY = cursorY;
+            char *look = &board[cursorX][cursorY];
             prevX = cursorX;
+            prevY = cursorY;
             prevZ = *look;
             pressedCh = getchar(); //Get the key
             if (labelMode && pressedCh >= 97 && pressedCh <= 122) { //Was this a label (and lowercase)?
@@ -832,7 +832,7 @@ int main ()
                 uint8_t moveDist = (prevMoveCount == UNTILHYPER ? HYPER : 1);
                 switch (pressedCh) {
                     case '>': //Page up
-                        moveDist = screenH / 2;
+                        moveDist = screenH / 4;
                     case '.': //Up
                         if (cursorY - moveDist >= 0) { cursorY -= moveDist; }
                         lDirY = lDirX = 0;
@@ -840,7 +840,7 @@ int main ()
                         prevMove = NORTH;
                         break;
                     case 'U': //Page right
-                        moveDist = screenW / 2;
+                        moveDist = screenW / 4;
                     case 'u': //Right
                         if (cursorX + moveDist < boardW) { cursorX += moveDist; }
                         lDirY = lDirX = 0;
@@ -848,7 +848,7 @@ int main ()
                         prevMove = EAST;
                         break;
                     case 'E': //Page down
-                        moveDist = screenH / 2;
+                        moveDist = screenH / 4;
                     case 'e': //Down
                         if (cursorY + moveDist < boardH) { cursorY += moveDist; }
                         lDirY = lDirX = 0;
@@ -856,7 +856,7 @@ int main ()
                         prevMove = SOUTH;
                         break;
                     case 'O': //Page right
-                        moveDist = screenW / 2;
+                        moveDist = screenW / 4;
                     case 'o': //Left
                         if (cursorX - moveDist >= 0) { cursorX -= moveDist; }
                         lDirY = lDirX = 0;
@@ -874,7 +874,7 @@ int main ()
                         lDirY = lDirX = 0;
                         lDirX = -1;
                         prevMove = WEST;
-                        look = &board[cursorY][cursorX];
+                        look = &board[cursorX][cursorY];
                     case ' ': //Remove
                         if (*look == 50 + switch_num) { //If on top of a switch, remove it correctly
                             placedSwitches[switch_num] = false;
@@ -1031,29 +1031,27 @@ int main ()
                                 dataToPaste = false;
                             } else {
                               //Set copy
-                                copyY = cursorY++;
                                 copyX = cursorX++;
+                                copyY = cursorY++;
                               //'hide' last pasted
                                 pasteX = pasteX2 = -1;
                                 pasteY = pasteY2 = -1;
                             }
                         } else { //We were copying
                           //Perform the copy
-                            copyY2 = cursorY;
                             copyX2 = cursorX;
-                            copyYDist = (copyY2 - copyY);
+                            copyY2 = cursorY;
                             copyXDist = (copyX2 - copyX);
+                            copyYDist = (copyY2 - copyY);
                             copyData->clear();
-                            for (int y = copyY; y < copyY2; ++y)
-                            {
-                                for (int x = copyX; x < copyX2; ++x)
-                                {
-                                    copyData->push_back(board[y][x]);
+                            for (int x = copyX; x < copyX2; ++x) {
+                                for (int y = copyY; y < copyY2; ++y) {
+                                    copyData->push_back(board[x][y]);
                                 }
                             }
                             dataToPaste = true;
-                            cursorY = copyY;
                             cursorX = copyX;
+                            cursorY = copyY;
                         }
                         break;
                     case 'b': //Paste -or- Bit
@@ -1071,49 +1069,49 @@ int main ()
                     case 'J': //Paste mask
                         if (dataToPaste) {
                             if (pressedCh == 'k' || pressedCh == 'j') { //Remove copied-from area (move/clear)?
-                                for (int y = copyY; y < copyY2; ++y) {
-                                    for (int x = copyX; x < copyX2; ++x) {
-                                        board[y][x] = EMPTY;
+                                for (int x = copyX; x < copyX2; ++x) {
+                                    for (int y = copyY; y < copyY2; ++y) {
+                                        board[x][y] = EMPTY;
                                     }
                                 }
                             }
-                            int cYend, cXend;
-                            cYend = cursorY + copyYDist;
+                            int cXend, cYend;
                             cXend = cursorX + copyXDist;
+                            cYend = cursorY + copyYDist;
                             if (pressedCh != 'j') { //Paste copy data onto the board
                                 uint32_t i = 0;
                                 if (pressedCh == 'K') { //Swap
-                                    for (int y = copyY, y2 = cursorY; y < copyY2; ++y, ++y2) {
-                                        for (int x = copyX, x2 = cursorX; x < copyX2; ++x, ++x2) {
-                                            board[y][x] = board[y2][x2];
-                                            board[y2][x2] = copyData->at(i);
+                                    for (int x = copyX, x2 = cursorX; x < copyX2; ++x, ++x2) {
+                                        for (int y = copyY, y2 = cursorY; y < copyY2; ++y, ++y2) {
+                                            board[x][y] = board[x2][y2];
+                                            board[x2][y2] = copyData->at(i);
                                             ++i;
                                         }
                                     }
                                     i = 0;
                                 }
                                 if (pressedCh == 'm') { //x-flip paste
-                                    for (int y = cursorY; y < cYend; ++y) {
-                                        for (int x = cXend - 1; x >= cursorX; --x) {
-                                            board[y][x] = copyData->at(i);
-                                            if (board[y][x] == UN_E_DIODE) { board[y][x] = UN_W_DIODE; } //E Diode to W Diode
-                                            else if (board[y][x] == UN_W_DIODE) { board[y][x] = UN_E_DIODE; } //W Diode to E Diode
+                                    for (int x = cXend - 1; x >= cursorX; --x) {
+                                        for (int y = cursorY; y < cYend; ++y) {
+                                            board[x][y] = copyData->at(i);
+                                            if (board[x][y] == UN_E_DIODE) { board[x][y] = UN_W_DIODE; } //E Diode to W Diode
+                                            else if (board[x][y] == UN_W_DIODE) { board[x][y] = UN_E_DIODE; } //W Diode to E Diode
                                             ++i;
                                         }
                                     }
                                 } else if (pressedCh == 'w') { //y-flip paste
-                                    for (int y = cYend - 1; y >= cursorY; --y) {
-                                        for (int x = cursorX; x < cXend; ++x) {
-                                            board[y][x] = copyData->at(i);
-                                            if (board[y][x] == UN_S_DIODE) { board[y][x] = UN_N_DIODE; } //S Diode to N Diode
-                                            else if (board[y][x] == UN_N_DIODE) { board[y][x] = UN_S_DIODE; } //N Diode to S Diode
+                                    for (int x = cursorX; x < cXend; ++x) {
+                                        for (int y = cYend - 1; y >= cursorY; --y) {
+                                            board[x][y] = copyData->at(i);
+                                            if (board[x][y] == UN_S_DIODE) { board[x][y] = UN_N_DIODE; } //S Diode to N Diode
+                                            else if (board[x][y] == UN_N_DIODE) { board[x][y] = UN_S_DIODE; } //N Diode to S Diode
                                             ++i;
                                         }
                                     }
                                 } else { //Other paste
                                     if (pressedCh == 'B') { //Unelectrified
-                                        for (int y = cursorY; y < cYend; ++y) {
-                                            for (int x = cursorX; x < cXend; ++x) {
+                                        for (int x = cursorX; x < cXend; ++x) {
+                                            for (int y = cursorY; y < cYend; ++y) {
                                                 uint8_t c = copyData->at(i);
                                                 switch (c) {
                                                     case P3_STRETCH: case P2_STRETCH: case P1_STRETCH: c = U1_STRETCH; break;
@@ -1121,23 +1119,23 @@ int main ()
                                                         --c;
                                                         break;
                                                 }
-                                                board[y][x] = c;
+                                                board[x][y] = c;
                                                 ++i;
                                             }
                                         }
                                     } else { //Unmodified
                                         if (pressedCh == 'J') { //Paste mask (' ' is not pasted)
-                                            for (int y = cursorY; y < cYend; ++y) {
-                                                for (int x = cursorX; x < cXend; ++x) {
+                                            for (int x = cursorX; x < cXend; ++x) {
+                                             for (int y = cursorY; y < cYend; ++y) {
                                                     char c = copyData->at(i);
-                                                    if (c) { board[y][x] = c; }
+                                                    if (c) { board[x][y] = c; }
                                                     ++i;
                                                 }
                                             }
                                         } else { //Normal, full paste
-                                            for (int y = cursorY; y < cYend; ++y) {
-                                                for (int x = cursorX; x < cXend; ++x) {
-                                                    board[y][x] = copyData->at(i);
+                                            for (int x = cursorX; x < cXend; ++x) {
+                                                for (int y = cursorY; y < cYend; ++y) {
+                                                    board[x][y] = copyData->at(i);
                                                     ++i;
                                                 }
                                             }
@@ -1150,16 +1148,16 @@ int main ()
                                 dataToPaste = false;
                             }
                           //Set last pasted area markers
-                            pasteY  = cursorY;
                             pasteX  = cursorX;
-                            pasteY2 = cYend;
+                            pasteY  = cursorY;
                             pasteX2 = cXend;
+                            pasteY2 = cYend;
                           //Re-calculate the electrification area
                           //Use heuristic
-                            if (pasteY < elecY) { elecY = pasteY; }
-                            else if (pasteY2 - 1 > elecY2) { elecY2 = pasteY2 - 1; }
                             if (pasteX < elecX) { elecX = pasteX; }
                             else if (pasteX2 - 1 > elecX2) { elecX2 = pasteX2 - 1; }
+                            if (pasteY < elecY) { elecY = pasteY; }
+                            else if (pasteY2 - 1 > elecY2) { elecY2 = pasteY2 - 1; }
                         }
                         break;
                     case 'q': //Quit
@@ -1185,9 +1183,9 @@ int main ()
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
                                 std::string saveData = "";
-                                for (int y = elecY; y <= elecY2; ++y) {
-                                    for (int x = elecX; x <= elecX2; ++x) {
-                                        switch (board[y][x]) {
+                                for (int x = elecX; x <= elecX2; ++x) {
+                                    for (int y = elecY; y <= elecY2; ++y) {
+                                        switch (board[x][y]) {
                                             case EMPTY:                          saveData += ' '; break;
                                             case UN_WIRE: case PW_WIRE:          saveData += '#'; break;
                                             case UN_AND: case PW_AND:            saveData += 'A'; break;
@@ -1206,10 +1204,10 @@ int main ()
                                             case UN_H_WIRE: case PW_H_WIRE:      saveData += '-'; break;
                                             case UN_V_WIRE: case PW_V_WIRE:      saveData += '|'; break;
                                         }
-                                        if (board[y][x] >= 50 && board[y][x] <= 59) { //Is switch?
-                                            saveData += board[y][x] - 2;
-                                        } else if (board[y][x] >= 97 && board[y][x] <= 122) { //Is label?
-                                            saveData += board[y][x];
+                                        if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
+                                            saveData += board[x][y] - 2;
+                                        } else if (board[x][y] >= 97 && board[x][y] <= 122) { //Is label?
+                                            saveData += board[x][y];
                                         }
                                     }
                                     saveData += '\n';
@@ -1245,7 +1243,7 @@ int main ()
                                 uint64_t len = saveData.length();
                                 if (len > 0) {
                                     uint8_t saveChar;
-                                    int y = 0, x = 0, maxX = 0;
+                                    int x = 0, maxX = 0, y = 0;
                                     for (uint32_t i = 0; i < len; ++i) {
                                         if (saveData[i] == '\n') {
                                             ++y;
@@ -1282,12 +1280,13 @@ int main ()
                                             } else if (saveData[i] >= 97 && saveData[i] <= 122) { //Is label?
                                                 saveChar = saveData[i];
                                             }
-                                            board[y][x] = saveChar;
+                                            board[x][y] = saveChar;
                                             ++x;
                                         }
                                     }
-                                    elecY = 0; elecX = 0;
-                                    elecY2 = y - 1; elecX2 = maxX - 1;
+                                    elecY = elecX = 0;
+                                    elecX2 = maxX - 1;
+                                    elecY2 = y - 1;
                                   //Turn off all Switches
                                     for (uint32_t i = 0; i < 10; ++i) {
                                         switches[i] = false;
@@ -1296,8 +1295,8 @@ int main ()
                                     memset(branch, 0, sizeof(branch));
                                     branches = 0;
                                   //Move cursor
-                                    cursorY = screenHh;
                                     cursorX = screenWh;
+                                    cursorY = screenHh;
                                 }
                             }
                         }
@@ -1309,8 +1308,8 @@ int main ()
                         std::string xcoord = getInput();
                         std::cout << "Enter y coord: ";
                         std::string ycoord = getInput();
-                        cursorY = atoi(ycoord.c_str());
                         cursorX = atoi(xcoord.c_str());
+                        cursorY = atoi(ycoord.c_str());
                     }
                         break;
                     case 'f': //Crosshairs
@@ -1339,11 +1338,9 @@ int main ()
                     switch_num = pressedCh - 48;
                     if (placedSwitches[switch_num]) { //Is the switch already placed? Power it
                         bool found = false;
-                        for (int y = 0; y < boardH; ++y)
-                        {
-                            for (int x = 0; x < boardW; ++x)
-                            {
-                                if (board[y][x] == 50 + switch_num) { found = true; }
+                        for (int x = 0; x < boardW; ++x) {
+                            for (int y = 0; y < boardH; ++y) {
+                                if (board[x][y] == 50 + switch_num) { found = true; }
                             }
                         }
                         if (found) { //But was it reaaaaaaally placed? It could have been overwrote
@@ -1360,25 +1357,25 @@ int main ()
                 }
               //Re-calculate the electrification area
                 if (toMove) { //Use heuristic
-                    int y = cursorY;
                     int x = cursorX;
-                    if (y < elecY) { elecY = y; }
-                    else if (y > elecY2) { elecY2 = y; }
+                    int y = cursorY;
                     if (x < elecX) { elecX = x; }
                     else if (x > elecX2) { elecX2 = x; }
+                    if (y < elecY) { elecY = y; }
+                    else if (y > elecY2) { elecY2 = y; }
                 }
                 if (elecReCalc) { //Do full calculate
-                    elecY = boardH;
-                    elecY2 = 0;
                     elecX = boardW;
                     elecX2 = 0;
-                    for (int y = 0; y < boardH; ++y) {
-                        for (int x = 0; x < boardW; ++x) {
-                            if (board[y][x]) {
-                                if (y < elecY) { elecY = y; }
-                                else if (y > elecY2) { elecY2 = y; }
+                    elecY = boardH;
+                    elecY2 = 0;
+                    for (int x = 0; x < boardW; ++x) {
+                        for (int y = 0; y < boardH; ++y) {
+                            if (board[x][y]) {
                                 if (x < elecX) { elecX = x; }
                                 else if (x > elecX2) { elecX2 = x; }
+                                if (y < elecY) { elecY = y; }
+                                else if (y > elecY2) { elecY2 = y; }
                             }
                         }
                     }
@@ -1388,30 +1385,30 @@ int main ()
                 if (labelMode) {
                     ++cursorX;
                 } else {
-                    cursorY += lDirY;
                     cursorX += lDirX;
+                    cursorY += lDirY;
                 }
                 //This was probably an action requiring an undo, so let's record it
-                undos[u][0] = prevY;
                 undos[u][1] = prevX;
+                undos[u][0] = prevY;
                 undos[u][2] = prevZ;
-                undos[u][3] = board[prevY][prevX];
+                undos[u][3] = board[prevX][prevY];
                 canr = 0;
                 ++u;
                 if (u == UNDOS) { u = 0; }
             }
           //Bounds checking
-            if (lDirY != 0 || lDirX != 0) { //The user made a move
+            if (lDirX != 0 || lDirY != 0) { //The user made a move
               //General bounds check
-                if (cursorY < 0) { cursorY = 0; }
                 if (cursorX < 0) { cursorX = 0; }
-                if (cursorY > boardH) { cursorY = boardH; }
+                if (cursorY < 0) { cursorY = 0; }
                 if (cursorX > boardW) { cursorX = boardW; }
+                if (cursorY > boardH) { cursorY = boardH; }
               //Copy/paste bounds check
-                if (copying && (cursorY < copyY || cursorX < copyX)) //Is the user trying to go out of copying bounds while copying?
+                if (copying && (cursorX < copyX || cursorY < copyY)) //Is the user trying to go out of copying bounds while copying?
                 {
-                    cursorY = copyY;
                     cursorX = copyX;
+                    cursorY = copyY;
                 }
               //See if we've moved enough in one direction to make the user move twice as fast
                 if      (prevMove == NORTH && lDirY == -1) { ++prevMoveCount; }
