@@ -31,7 +31,7 @@ const uint8_t HYPER = 2;
 
 uint8_t switches[10];
 bool placedSwitches[10];
-uint8_t switch;
+uint8_t switch_num;
 
 int elecY = boardH, elecX = boardW, elecY2 = 0, elecX2 = 0; //Electric bounds
 
@@ -76,27 +76,26 @@ void calcBoardCrops () //For calculating the part of the board on the screen
     if (boardCropY2 > boardH) { boardCropY = boardH - screenH; boardCropY2 = boardH; }
 }
 
-uint32_t lines;
-uint32_t cols;
-void getTerminalDimensions ()
+std::pair<uint16_t, uint16_t> getTerminalDimensions ()
 {
+    std::pair<uint16_t, uint16_t> dim;
     #ifdef TIOCGSIZE
         struct ttysize ts;
         ioctl(STDIN_FILENO, TIOCGSIZE, &ts);
-        cols = ts.ts_cols;
-        lines = ts.ts_lines;
+        dim.first = ts.ts_cols;
+        dim.second = ts.ts_lines;
     #elif defined(TIOCGWINSZ)
         struct winsize ts;
         ioctl(STDIN_FILENO, TIOCGWINSZ, &ts);
-        cols = ts.ws_col;
-        lines = ts.ws_row;
-    #endif /* TIOCGSIZE */
+        dim.first = ts.ws_col;
+        dim.second = ts.ws_row;
+    #endif
 }
 void resizeScreen ()
 {
-    getTerminalDimensions();
-    screenH = (lines < boardH ? lines: boardH) - 1;
-    screenW = (cols < boardW ? cols : boardW);
+    auto dim = getTerminalDimensions();
+    screenH = (dim.first < boardH ? dim.first: boardH) - 1;
+    screenW = (dim.second < boardW ? dim.second : boardW);
     screenHh = screenH / 2;
     screenWh = screenW / 2;
 }
@@ -278,8 +277,8 @@ void display ()
             }
             
             if (*look >= 50 && *look <= 59) { //Power
-                switch = *look - 50;
-                buff = (switches[switch] ? "\033[1;33;44m" + std::to_string(switch) : "\033[1;31;47m" + std::to_string(switch)) ; //Power switch
+                switch_num = *look - 50;
+                buff = (switches[switch_num] ? "\033[1;33;44m" + std::to_string(switch_num) : "\033[1;31;47m" + std::to_string(switch_num)) ; //Power switch
             }
             
             if (*look >= 97 && *look <= 122) { //Label
@@ -876,8 +875,8 @@ int main ()
                         prevMove = WEST;
                         look = &board[cursorY][cursorX];
                     case ' ': //Remove
-                        if (*look == 50 + switch) { //If on top of a switch, remove it correctly
-                            placedSwitches[switch] = false;
+                        if (*look == 50 + switch_num) { //If on top of a switch, remove it correctly
+                            placedSwitches[switch_num] = false;
                             toMove = true;
                         }
                         *look = EMPTY;
@@ -1275,10 +1274,10 @@ int main ()
                                             }
                                             if (saveData[i] >= 48 && saveData[i] <= 57) //Is switch?
                                             {
-                                                switch = saveData[i] - 48;
-                                                saveChar = switch + 50;
-                                                switches[switch] = false; //Set its power
-                                                placedSwitches[switch] = true; //Say it's placed
+                                                switch_num = saveData[i] - 48;
+                                                saveChar = switch_num + 50;
+                                                switches[switch_num] = false; //Set its power
+                                                placedSwitches[switch_num] = true; //Say it's placed
                                             } else if (saveData[i] >= 97 && saveData[i] <= 122) { //Is label?
                                                 saveChar = saveData[i];
                                             }
@@ -1336,25 +1335,25 @@ int main ()
                         break;
                 }
                 if (pressedCh >= 48 && pressedCh <= 57) { //Power button
-                    switch = pressedCh - 48;
-                    if (placedSwitches[switch]) { //Is the switch already placed? Power it
+                    switch_num = pressedCh - 48;
+                    if (placedSwitches[switch_num]) { //Is the switch already placed? Power it
                         bool found = false;
                         for (int y = 0; y < boardH; ++y)
                         {
                             for (int x = 0; x < boardW; ++x)
                             {
-                                if (board[y][x] == 50 + switch) { found = true; }
+                                if (board[y][x] == 50 + switch_num) { found = true; }
                             }
                         }
                         if (found) { //But was it reaaaaaaally placed? It could have been overwrote
-                            switches[switch] = !switches[switch];
+                            switches[switch_num] = !switches[switch_num];
                         } else {
-                            placedSwitches[switch] = false; //Mark it as non-existant
+                            placedSwitches[switch_num] = false; //Mark it as non-existant
                         }
                     } else { //No? Place it
-                        *look = 50 + switch;
-                        switches[switch] = false;
-                        placedSwitches[switch] = true;
+                        *look = 50 + switch_num;
+                        switches[switch_num] = false;
+                        placedSwitches[switch_num] = true;
                         toMove = true;
                     }
                 }
