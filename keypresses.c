@@ -9,7 +9,7 @@
 //http://ubuntuforums.org/showthread.php?t=554845
 //===================================
 static struct termios g_old_kbd_mode;
-static char pressedCh;
+static char pressed_ch;
 
 //Check if a key has been pressed
 static int kbhit (void)
