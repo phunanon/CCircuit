@@ -2,6 +2,7 @@
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
+//Switch to dilimeter variable naming convention
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -316,6 +317,26 @@ void display ()
     }
     std::cout << buffer;
     fflush(stdout);
+}
+
+
+
+void elecReCalculate ()
+{
+    elecX = boardW;
+    elecX2 = 0;
+    elecY = boardH;
+    elecY2 = 0;
+    for (int32_t x = 0; x < boardW; ++x) {
+        for (int32_t y = 0; y < boardH; ++y) {
+            if (board[x][y]) {
+                if (x < elecX) { elecX = x; }
+                else if (x > elecX2) { elecX2 = x; }
+                if (y < elecY) { elecY = y; }
+                else if (y > elecY2) { elecY2 = y; }
+            }
+        }
+    }
 }
 
 
@@ -832,7 +853,6 @@ int32_t main ()
                 lDirY = lDirX = 0;
                 lDirX = 1;
             } else {
-                bool elecReCalc = false;
                 uint8_t moveDist = 1;
                 switch (pressedCh) {
                     case '>': //Far up
@@ -1180,6 +1200,9 @@ int32_t main ()
                             std::cout << "Confirm? (y/N)" << std::endl;
                             char sure = getchar();
                             if (sure == 'y') {
+                              //Recalculate electrification area
+                                elecReCalculate();
+                              //Save project to storage
                                 projName = save;
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
@@ -1230,6 +1253,7 @@ int32_t main ()
                             std::cout << "Confirm? (y/N)" << std::endl;
                             char sure = getchar();
                             if (sure == 'y') {
+                              //Decompress project from storage
                                 std::cout << "Decompressing..." << std::endl;
                                 system(("cp " + load + ".gz load.gz").c_str());
                                 system((SYSPATH + "gzip -d load.gz").c_str());
@@ -1239,17 +1263,38 @@ int32_t main ()
                                 in.close();
                                 system("rm load");
                                 std::cout << "Loading..." << std::endl;
-                                memset(board, 0, sizeof(board[0][0]) * boardH * boardW); //Set the board Empty
+                              //Empty the current board
+                                memset(board, 0, sizeof(board[0][0]) * boardH * boardW);
+                              //Turn off all Switches
+                                for (uint32_t i = 0; i < 10; ++i) {
+                                    switches[i] = false;
+                                }
+                              //Remove all previous electricity
+                                memset(branch, 0, sizeof(branch));
+                                branches = 0;
+                              //Load project from decompressed data
                                 projName = load;
                                 uint64_t len = loadData.length();
+                                //Find rough project dimensions to place the project in the middle of the board
+                                uint32_t rough_W, rough_H;
+                                uint32_t top_left_X, top_left_Y;
+                                for (uint32_t i = 0; i < len; ++i) {
+                                    if (loadData[i] == '\n') {
+                                        rough_W = i;
+                                        rough_H = len / i;
+                                        top_left_X = boardW/2 - rough_W/2;
+                                        top_left_Y = boardH/2 - rough_H/2;
+                                        break;
+                                    }
+                                }
+                                //Iterate through data
                                 if (len > 0) {
                                     uint8_t loadChar;
-                                    int32_t x = 0, maxX = 0, y = 0;
+                                    int32_t x = top_left_X, y = top_left_Y;
                                     for (uint32_t i = 0; i < len; ++i) {
                                         if (loadData[i] == '\n') {
                                             ++y;
-                                            maxX = x;
-                                            x = 0;
+                                            x = top_left_X;
                                         } else {
                                             loadChar = EMPTY;
                                             switch (loadData[i])
@@ -1285,19 +1330,11 @@ int32_t main ()
                                             ++x;
                                         }
                                     }
-                                    elecY = elecX = 0;
-                                    elecX2 = maxX - 1;
-                                    elecY2 = y - 1;
-                                  //Turn off all Switches
-                                    for (uint32_t i = 0; i < 10; ++i) {
-                                        switches[i] = false;
-                                    }
-                                  //Remove all previous electricity
-                                    memset(branch, 0, sizeof(branch));
-                                    branches = 0;
+                                  //Recalculate electrification area
+                                    elecReCalculate();
                                   //Move cursor
-                                    cursorX = screenWh;
-                                    cursorY = screenHh;
+                                    cursorX = elecX + 16;
+                                    cursorY = elecY + 8;
                                 }
                             }
                         }
@@ -1356,30 +1393,14 @@ int32_t main ()
                         toMove = true;
                     }
                 }
-              //Re-calculate the electrification area
-                if (toMove) { //Use heuristic
+              //Re-calculate the electrification area using heuristic
+                if (toMove) {
                     int32_t x = cursorX;
                     int32_t y = cursorY;
                     if (x < elecX) { elecX = x; }
                     else if (x > elecX2) { elecX2 = x; }
                     if (y < elecY) { elecY = y; }
                     else if (y > elecY2) { elecY2 = y; }
-                }
-                if (elecReCalc) { //Do full calculate
-                    elecX = boardW;
-                    elecX2 = 0;
-                    elecY = boardH;
-                    elecY2 = 0;
-                    for (int32_t x = 0; x < boardW; ++x) {
-                        for (int32_t y = 0; y < boardH; ++y) {
-                            if (board[x][y]) {
-                                if (x < elecX) { elecX = x; }
-                                else if (x > elecX2) { elecX2 = x; }
-                                if (y < elecY) { elecY = y; }
-                                else if (y > elecY2) { elecY2 = y; }
-                            }
-                        }
-                    }
                 }
             }
             if (toMove) { //We placed something, so lets move out of the way
