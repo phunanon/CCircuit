@@ -338,10 +338,10 @@ void elecReCalculate ()
 
 
 
-bool powerAtDir (int32_t x, int32_t y, uint8_t dir, bool dead = false)
+bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
 {
-    if (x < 0 || y < 0 || x >= board_W || y >= board_H) { return false; }
-    char look = board[x][y];
+    if (_X < 0 || _Y < 0 || _X >= board_W || _Y >= board_H) { return false; }
+    char look = board[_X][_Y];
     uint8_t diode;
     uint8_t wire;
     char xd = 0;
@@ -355,15 +355,15 @@ bool powerAtDir (int32_t x, int32_t y, uint8_t dir, bool dead = false)
   //Check for conditions
     if (look == PW_BRIDGE) { //Powered Bridge
       //Check this Powered Bridge is powered in this direction
-        x += xd;
-        y += yd;
-        while (board[x][y] == PW_BRIDGE) { //Seek along the Bridge
-            x += xd;
-            y += yd;
+        _X += xd;
+        _Y += yd;
+        while (board[_X][_Y] == PW_BRIDGE) { //Seek along the Bridge
+            _X += xd;
+            _Y += yd;
         }
         //Reached the end of the bridges
     }
-    look = board[x][y];
+    look = board[_X][_Y];
     bool is_power_present = false, is_powered = false;
     if (look >= 50 && look <= 59) {
         is_power_present = true;
@@ -400,37 +400,37 @@ bool powerAtDir (int32_t x, int32_t y, uint8_t dir, bool dead = false)
 }
 
 //Fix bounds checking
-uint8_t nextToLives (int32_t x, int32_t y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
+uint8_t nextToLives (int32_t _X, int32_t _Y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
 {
     uint8_t lives = 0;
   //Check North
-    if      (mode == 0 && powerAtDir(x, y - 1, NORTH, true)) { return 0; }
-    else if (powerAtDir(x, y - 1, NORTH)) {
+    if      (mode == 0 && powerAtDir(_X, _Y - 1, NORTH, true)) { return 0; }
+    else if (powerAtDir(_X, _Y - 1, NORTH)) {
         ++lives;
     }
   //Check East
-    if      (mode == 0 && powerAtDir(x + 1, y, EAST, true)) { return 0; }
-    else if (powerAtDir(x + 1, y, EAST)) {
+    if      (mode == 0 && powerAtDir(_X + 1, _Y, EAST, true)) { return 0; }
+    else if (powerAtDir(_X + 1, _Y, EAST)) {
         ++lives;
     }
   //Check West
-    if      (mode == 0 && powerAtDir(x - 1, y, WEST, true)) { return 0; }
-    else if (powerAtDir(x - 1, y, WEST)) {
+    if      (mode == 0 && powerAtDir(_X - 1, _Y, WEST, true)) { return 0; }
+    else if (powerAtDir(_X - 1, _Y, WEST)) {
         ++lives;
     }
   //Return
     return lives;
 }
 
-uint8_t betweenLives (int32_t x, int32_t y)
+uint8_t betweenLives (int32_t _X, int32_t _Y)
 {
     uint8_t lives = 0;
   //Check East
-    if (powerAtDir(x + 1, y, EAST)) {
+    if (powerAtDir(_X + 1, _Y, EAST)) {
         ++lives;
     }
   //Check West
-    if (powerAtDir(x - 1, y, WEST)) {
+    if (powerAtDir(_X - 1, _Y, WEST)) {
         ++lives;
     }
   //Return
@@ -445,10 +445,10 @@ struct Branch
 
 Branch branch[2048];
 uint32_t branches = 0;
-int32_t addBranch (int32_t x, int32_t y, uint8_t prev_dir)
+int32_t addBranch (int32_t _X, int32_t _Y, uint8_t prev_dir)
 {
-    branch[branches].x = x;
-    branch[branches].y = y;
+    branch[branches].x = _X;
+    branch[branches].y = _Y;
     branch[branches].d = prev_dir; //0: none, NESW
     return branches++;
 }
@@ -765,9 +765,9 @@ void elec () //Electrify the board appropriately
 
 
 bool inputted;
-std::string getInput (std::string default_text = "")
+std::string getInput (std::string _pretext = "")
 {
-    std::string to_return = default_text;
+    std::string to_return = _pretext;
     std::cout << to_return;
     fflush(stdout);
     while (!inputted) {
