@@ -37,7 +37,7 @@ uint32_t undos[UNDOS][4]; //[u][x, y, was, now]
 uint32_t can_redo = 0;
 uint32_t u = 0;
 
-bool copying, is_data_to_paste;
+bool is_copying, is_data_to_paste;
 uint32_t copy_X, copy_Y, copy_X2, copy_Y2, copy_X_dist, copy_Y_dist;
 uint32_t paste_X, paste_Y, paste_X2, paste_Y2;
 std::vector<char> *copy_data = new std::vector<char>();
@@ -159,8 +159,8 @@ void display ()
     }
     buffer += "\033[37;40m";
     bar_off_len += 8;
-    buffer += (!is_label_mode && !copying ? "  " + std::string(is_dir_wire ? "direct" : "genperp") + " wire" : ""); 
-    buffer += (copying ? "  selecting (x complete)" : (is_data_to_paste ? "  ready (x dismiss, b paste, k cut, K swap, j clear, m paste x-flip, w y-flip)" : ""));
+    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "direct" : "genperp") + " wire" : ""); 
+    buffer += (is_copying ? "  selecting (x complete)" : (is_data_to_paste ? "  ready (x dismiss, b paste, k cut, K swap, j clear, m paste x-flip, w y-flip)" : ""));
     buffer += (is_auto_bridge ? "  auto bridging" : "");
     buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
     buffer += (paused ? "  paused" : "");
@@ -283,7 +283,7 @@ void display ()
                 buff = "\033[4;1;34;47m" + std::string(look, look + 1);
             }
 
-            if (copying) { //Copy box
+            if (is_copying) { //Copy box
                 if (y == copy_Y - 1 && x >= copy_X - 1 && x <= cursor_X)    { buff = "\033[1;30;46mx"; } //North
                 if (x == cursor_X && y >= copy_Y - 1 && y <= cursor_Y)      { buff = "\033[1;30;46mx"; } //East
                 if (y == cursor_Y && x >= copy_X - 1 && x <= cursor_X)      { buff = "\033[1;30;46mx"; } //South
@@ -1041,10 +1041,10 @@ int32_t main ()
                         }
                         break;
                     case 'x': //Copy
-                        if (copying = !copying) { //Are we not copying?
+                        if (is_copying = !is_copying) { //Are we not is_copying?
                             if (is_data_to_paste) { //Did we have something to paste?
                               //If so, clear it
-                                copying = false;
+                                is_copying = false;
                                 copy_data->clear();
                                 is_data_to_paste = false;
                             } else {
@@ -1055,7 +1055,7 @@ int32_t main ()
                                 paste_X = paste_X2 = -1;
                                 paste_Y = paste_Y2 = -1;
                             }
-                        } else { //We were copying
+                        } else { //We were is_copying
                           //Perform the copy
                             copy_X2 = cursor_X;
                             copy_Y2 = cursor_Y;
@@ -1424,7 +1424,7 @@ int32_t main ()
                 if (cursor_X > board_W) { cursor_X = board_W; }
                 if (cursor_Y > board_H) { cursor_Y = board_H; }
               //Copy/paste bounds check
-                if (copying && (cursor_X < copy_X || cursor_Y < copy_Y)) //Is the user trying to go out of copying bounds while copying?
+                if (is_copying && (cursor_X < copy_X || cursor_Y < copy_Y)) //Is the user trying to go out of is_copying bounds while is_copying?
                 {
                     cursor_X = copy_X;
                     cursor_Y = copy_Y;
