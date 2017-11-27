@@ -823,6 +823,7 @@ int32_t main ()
               << "\nzZ\t\tundo, redo"
               << "\nxbBkKjJmw\tinitiate/complete/discard selection, paste, paste unelectrified, or move, or swap, or clear area, or paste mask, or paste x flip, or paste y flip"
               << "\nq\t\tquit"
+              << "\n\nAfter initiating a selection, you can do a Save for just that component."
               << std::endl;
     while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
     std::cout << "Loading board..." << std::endl;
@@ -1192,6 +1193,13 @@ int32_t main ()
                         break;
                     case 'Y': //Save
                     {
+                        bool is_saving_component = is_data_to_paste;
+                        std::cout << "\033[0;37;40mSaving \033[1;37;40m";
+                        if (is_saving_component) {
+                            std::cout << "COMPONENT" << std::endl;
+                        } else {
+                            std::cout << "PROJECT" << std::endl;
+                        }
                         std::cout << "\033[0;37;40mSave name: ";
                         std::string save = getInput(proj_name);
                         if (save.length()) {
@@ -1205,8 +1213,22 @@ int32_t main ()
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
                                 std::string save_data = "";
-                                for (int32_t y = elec_Y; y <= elec_Y2; ++y) {
-                                    for (int32_t x = elec_X; x <= elec_X2; ++x) {
+                                
+                                uint32_t x1, y1, x2, y2;
+                                if (is_saving_component) {
+                                    x1 = copy_X;
+                                    y1 = copy_Y;
+                                    x2 = copy_X2;
+                                    y2 = copy_Y2;
+                                } else {
+                                    x1 = elec_X;
+                                    y1 = elec_Y;
+                                    x2 = elec_X2;
+                                    y2 = elec_Y2;
+                                }
+                                
+                                for (uint32_t y = y1; y <= y2; ++y) {
+                                    for (uint32_t x = x1; x <= x2; ++x) {
                                         switch (board[x][y]) {
                                             case EMPTY:                          save_data += ' '; break;
                                             case UN_WIRE: case PW_WIRE:          save_data += '#'; break;
