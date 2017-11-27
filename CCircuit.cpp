@@ -802,7 +802,7 @@ int32_t main ()
 {
   //Load shite to listen to pressed keys
     loadKeyListen();
-    std::cout << "Patrick Bowen @phunanon 2016\n"
+    std::cout << "Patrick Bowen @phunanon 2017\n"
               << "\nINSTRUCTIONS"
               << "\n[space]\t\tremove anything"
               << "\n[enter]\t\telectrify cursor"
@@ -853,28 +853,28 @@ int32_t main ()
                 uint8_t move_dist = 1;
                 switch (pressed_ch) {
                     case '>': //Far up
-                        move_dist = 8;
+                        move_dist = (is_data_to_paste ? copy_Y_dist : 8);
                     case '.': //Up
                         if (cursor_Y - move_dist >= 0) { cursor_Y -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = -1;
                         break;
                     case 'U': //Far right
-                        move_dist = 16;
+                        move_dist = (is_data_to_paste ? copy_X_dist : 16);
                     case 'u': //Right
                         if (cursor_X + move_dist < board_W) { cursor_X += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_X = 1;
                         break;
                     case 'E': //Far down
-                        move_dist = 8;
+                        move_dist = (is_data_to_paste ? copy_Y_dist : 8);
                     case 'e': //Down
                         if (cursor_Y + move_dist < board_H) { cursor_Y += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = 1;
                         break;
-                    case 'O': //Far right
-                        move_dist = 16;
+                    case 'O': //Far left
+                        move_dist = (is_data_to_paste ? copy_X_dist : 16);
                     case 'o': //Left
                         if (cursor_X - move_dist >= 0) { cursor_X -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
