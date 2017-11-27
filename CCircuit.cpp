@@ -2,6 +2,7 @@
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
+//Add component loading/saving through copy/paste command
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -819,7 +820,7 @@ int32_t main ()
               << "\n;\t\twall"
               << "\nyY\t\tload, save"
               << "\n'\t\ttoggle [lowercase] label mode"
-              << "\nzv\t\tundo, redo"
+              << "\nzZ\t\tundo, redo"
               << "\nxbBkKjJmw\tinitiate/complete/discard selection, paste, paste unelectrified, or move, or swap, or clear area, or paste mask, or paste x flip, or paste y flip"
               << "\nq\t\tquit"
               << std::endl;
@@ -1032,7 +1033,7 @@ int32_t main ()
                         board[undos[u][0]][undos[u][1]] = undos[u][2];
                         ++can_redo;
                         break;
-                    case 'v': //Redo
+                    case 'Z': //Redo
                         if (u == UNDOS) { u = 0; }
                         if (can_redo > 0) {
                             --can_redo;
@@ -1408,8 +1409,8 @@ int32_t main ()
                     cursor_Y += prev_dir_Y;
                 }
                 //This was probably an action requiring an undo, so let's record it
-                undos[u][1] = prev_X;
-                undos[u][0] = prev_Y;
+                undos[u][0] = prev_X;
+                undos[u][1] = prev_Y;
                 undos[u][2] = prev_Z;
                 undos[u][3] = board[prev_X][prev_Y];
                 can_redo = 0;
