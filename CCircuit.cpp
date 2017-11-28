@@ -2,7 +2,7 @@
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
-//Add component loading/saving through copy/paste command
+//Use find . -type f -iname "*.gz" -exec basename {} .gz ';' to autocomplete save/load
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -769,6 +769,86 @@ void elec () //Electrify the board appropriately
 
 
 
+/**
+ * Execute a command and get the result.
+ * https://stackoverflow.com/a/3578548/7000138
+ * @param   cmd - The system command to run.
+ * @return  The string command line output of the command.
+ */
+std::string getStdoutFromCmd(std::string cmd)
+{
+
+    std::string data;
+    FILE * stream;
+    const int max_buffer = 256;
+    char buffer[max_buffer];
+    cmd.append(" 2>&1"); // Do we want STDERR?
+
+    stream = popen(cmd.c_str(), "r");
+    if (stream) {
+        while (!feof(stream))
+            if (fgets(buffer, max_buffer, stream) != NULL) data.append(buffer);
+        pclose(stream);
+    }
+    return data;
+}
+
+
+std::string autoCompleteForFile (std::string input)
+{
+    std::string find_result = getStdoutFromCmd(std::string("find . -type f -iname \""+ input +"*.gz\" -exec basename {} .gz ';'").c_str());
+
+  //Seperate lines returned (stackoverflow.com/a/8448359/7000138)
+    std::vector<std::string> lines;
+    char* c_lines = (char*)find_result.c_str();
+    char seps[] = "\n";
+    char *token = strtok(c_lines, seps);
+    while (token != NULL) {
+        lines.push_back(token);
+        token = strtok(NULL, seps);
+    }
+
+  //Find initial agreement in results compared to input
+    uint16_t agreement = lines.size();
+    bool is_agreed[agreement];
+    for (uint16_t i = 0; i < agreement; ++i) { is_agreed[i] = true; }
+    for (uint16_t c = 0, clen = input.size(); c < clen; ++c) {
+        for (uint16_t l = 0, llen = lines.size(); l < llen; ++l) {
+            if (is_agreed[l] && (lines[l].length() <= c || lines[l].at(c) != input.at(c))) {
+                is_agreed[l] = false;
+                --agreement;
+            }
+        }
+    }
+    if (!agreement) { return input; } //There are no files starting with that name
+  //Find consensus in the results for look-ahead
+    std::string consensus = input;
+    std::string proposal = consensus;
+    bool is_agreeing = true;
+    while (is_agreeing) {
+        consensus = proposal;
+        for (uint16_t a = 0, alen = lines.size(); a < alen; ++a) {
+            if (is_agreed[a]) {
+                if (proposal == consensus) { //Create the first proposal?
+                    if (lines[a].length() <= consensus.length()) {
+                        is_agreeing = false;
+                        break;
+                    }
+                    proposal += lines[a].at(consensus.length());
+                } else {
+                    if (lines[a].length() < proposal.length() || proposal != lines[a].substr(0, proposal.length())) {
+                        is_agreeing = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return consensus;
+}
+
+
+
 bool inputted;
 std::string getInput (std::string _pretext = "")
 {
@@ -778,12 +858,15 @@ std::string getInput (std::string _pretext = "")
     while (!inputted) {
         while (kbhit()) {
             pressed_ch = getchar(); //Get the key
-            std::cout << pressed_ch; //Echo it to the user
-            if (pressed_ch == '\n') {
+            if (pressed_ch == '\n') { //Done
                 inputted = true;
-            } else if (pressed_ch == 27) {
+            } else if (pressed_ch == 27) { //Escape
                 to_return = "";
                 inputted = true;
+            } else if (pressed_ch == 9) { //Autocomplete
+                std::string auto_completed = autoCompleteForFile(to_return);
+                std::cout << auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
+                to_return = auto_completed;
             } else {
                 if (pressed_ch == 127) {
                     if (to_return.length()) {
@@ -792,6 +875,7 @@ std::string getInput (std::string _pretext = "")
                     }
                 } else {
                     to_return += pressed_ch;
+                    std::cout << pressed_ch; //Echo it to the user
                 }
             }
             fflush(stdout);
@@ -1243,7 +1327,7 @@ int32_t main ()
                         std::cout << "\033[0;37;40mSave name: ";
                         std::string save = getInput(proj_name + (is_save_component ? "-" : ""));
                         if (save.length()) {
-                            std::cout << "Confirm? (y/N)" << std::endl;
+                            std::cout << std::endl << "Confirm? (y/N)" << std::endl;
                             char sure = getchar();
                             if (sure == 'y') {
                               //Recalculate electrification area
@@ -1319,7 +1403,7 @@ int32_t main ()
                         std::cout << "\033[0;37;40mLoad name: ";
                         std::string load = getInput();
                         if (load.length()) {
-                            std::cout << "Confirm? (y/N)" << std::endl;
+                            std::cout << std::endl << "Confirm? (y/N)" << std::endl;
                             char sure = getchar();
                             if (sure == 'y') {
                               //Decompress project from storage
