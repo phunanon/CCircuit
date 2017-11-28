@@ -3,7 +3,6 @@
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
 //Add component loading/saving through copy/paste command
-//Don't allow backspaces to erase prompt
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -782,10 +781,15 @@ std::string getInput (std::string _pretext = "")
             std::cout << pressed_ch; //Echo it to the user
             if (pressed_ch == '\n') {
                 inputted = true;
+            } else if (pressed_ch == 27) {
+                to_return = "";
+                inputted = true;
             } else {
-                if (pressed_ch == 127 && to_return.length()) {
-                    std::cout << "\b \b";
-                    to_return = to_return.substr(0, to_return.length() - 1);
+                if (pressed_ch == 127) {
+                    if (to_return.length()) {
+                        std::cout << "\b \b";
+                        to_return = to_return.substr(0, to_return.length() - 1);
+                    }
                 } else {
                     to_return += pressed_ch;
                 }
@@ -1237,7 +1241,7 @@ int32_t main ()
                             std::cout << "PROJECT" << std::endl;
                         }
                         std::cout << "\033[0;37;40mSave name: ";
-                        std::string save = getInput(proj_name);
+                        std::string save = getInput(proj_name + (is_save_component ? "-" : ""));
                         if (save.length()) {
                             std::cout << "Confirm? (y/N)" << std::endl;
                             char sure = getchar();
