@@ -2,7 +2,6 @@
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
-//Use find . -type f -iname "*.gz" -exec basename {} .gz ';' to autocomplete save/load
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -865,9 +864,14 @@ std::string getInput (std::string _pretext = "")
                 inputted = true;
             } else if (pressed_ch == 9) { //Autocomplete
                 std::string auto_completed = autoCompleteForFile(to_return);
-                std::cout << auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
+                std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
+                std::cout << auto_completed_end;
                 to_return = auto_completed;
             } else {
+              //Clear previous autocomplete
+                for (uint8_t i = 0; i < 32; ++i) { std::cout << " "; }
+                for (uint8_t i = 0; i < 32; ++i) { std::cout << "\b"; }
+              //Handle backspace, else normal input
                 if (pressed_ch == 127) {
                     if (to_return.length()) {
                         std::cout << "\b \b";
@@ -877,6 +881,12 @@ std::string getInput (std::string _pretext = "")
                     to_return += pressed_ch;
                     std::cout << pressed_ch; //Echo it to the user
                 }
+              //Echo autocomplete results
+                std::string auto_completed = autoCompleteForFile(to_return);
+                std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
+                std::cout << "\033[1;30;40m" << auto_completed_end;
+                for (uint16_t i = 0, ilen = auto_completed_end.length(); i < ilen; ++i) { std::cout << "\b"; }
+                std::cout << "\033[0;37;40m";
             }
             fflush(stdout);
         }
