@@ -1412,13 +1412,13 @@ int32_t main ()
                                             ++x;
                                         }
                                     }
+                                  //Recalculate electrification area
+                                    elecReCalculate();
                                     if (!is_load_component) {
                                       //Move cursor
                                         cursor_X = elec_X + 16;
                                         cursor_Y = elec_Y + 8;
                                     }
-                                  //Recalculate electrification area
-                                    elecReCalculate();
                                 }
                             }
                         }
