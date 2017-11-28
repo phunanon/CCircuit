@@ -1185,7 +1185,7 @@ int32_t main ()
                                                     ++i;
                                                 }
                                             }
-                                        } else { //Normal, full paste
+                                        } else if (pressed_ch == 'b') { //Normal, full paste
                                             for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
                                                 for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                                     if (i >= copy_data->size()) { break; }
