@@ -3,6 +3,7 @@
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
 //Add component loading/saving through copy/paste command
+//Don't allow backspaces to erase prompt
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -31,7 +32,7 @@ uint8_t switches[10];
 bool placed_switches[10];
 uint8_t switch_num;
 
-int32_t elec_X = board_W, elec_Y = board_H, elec_X2 = 0, elec_Y2 = 0; //Electric bounds
+int32_t elec_X = board_W, elec_Y = board_H, elec_X2 = 0, elec_Y2 = 0; //Electric bounds (swapped to induce tight first electrification)
 
 const uint32_t UNDOS = 512;
 uint32_t undos[UNDOS][4]; //[u][x, y, was, now]
@@ -39,9 +40,10 @@ uint32_t can_redo = 0;
 uint32_t u = 0;
 
 bool is_copying, is_data_to_paste;
-uint32_t copy_X, copy_Y, copy_X2, copy_Y2, copy_X_dist, copy_Y_dist;
-uint32_t paste_X, paste_Y, paste_X2, paste_Y2;
+int32_t copy_X, copy_Y, copy_X2, copy_Y2, paste_X_dist, paste_Y_dist;
+int32_t paste_X, paste_Y, paste_X2, paste_Y2;
 std::vector<char> *copy_data = new std::vector<char>();
+bool is_no_copy_source; //Data was from storage, not project
 
 bool is_auto_bridge = false;
 bool is_dir_wire = false;
@@ -161,7 +163,10 @@ void display ()
     buffer += "\033[37;40m";
     bar_off_len += 8;
     buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "direct" : "genperp") + " wire" : ""); 
-    buffer += (is_copying ? "  selecting (x complete)" : (is_data_to_paste ? "  ready (x dismiss, b paste, k cut, K swap, j clear, m paste x-flip, w y-flip)" : ""));
+    buffer += (is_copying ? "  selecting (x complete)" : (is_data_to_paste ?
+        (is_no_copy_source ?
+            "  ready (x dismiss, b paste, B unelec, m x-flip, w y-flip, J mask)" : "  ready (x dismiss, b paste, B unelec, k cut, K swap, j clear, m x-flip, w y-flip, J mask, Y save)")
+        : ""));
     buffer += (is_auto_bridge ? "  auto bridging" : "");
     buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
     buffer += (paused ? "  paused" : "");
@@ -300,7 +305,7 @@ void display ()
                     buff = "\033[30;43m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Paste area
-                else if (x >= cursor_X && x < cursor_X + copy_X_dist && y >= cursor_Y && y < cursor_Y + copy_Y_dist) {
+                else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
                     buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
                 }
             }
@@ -819,11 +824,12 @@ int32_t main ()
               << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
               << "\n;\t\twall"
               << "\nyY\t\tload, save"
+              << "\nv\t\timport component"
               << "\n'\t\ttoggle [lowercase] label mode"
               << "\nzZ\t\tundo, redo"
               << "\nxbBkKjJmw\tinitiate/complete/discard selection, paste, paste unelectrified, or move, or swap, or clear area, or paste mask, or paste x flip, or paste y flip"
               << "\nq\t\tquit"
-              << "\n\nAfter initiating a selection, you can do a Save for just that component."
+              << "\n\nAfter initiating a selection, you can do a Save to export that component."
               << std::endl;
     while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
     std::cout << "Loading board..." << std::endl;
@@ -854,34 +860,39 @@ int32_t main ()
             } else {
                 uint8_t move_dist = 1;
                 switch (pressed_ch) {
+
                     case '>': //Far up
-                        move_dist = (is_data_to_paste ? copy_Y_dist : 8);
+                        move_dist = (is_data_to_paste ? paste_Y_dist : 8);
                     case '.': //Up
                         if (cursor_Y - move_dist >= 0) { cursor_Y -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = -1;
                         break;
+
                     case 'U': //Far right
-                        move_dist = (is_data_to_paste ? copy_X_dist : 16);
+                        move_dist = (is_data_to_paste ? paste_X_dist : 16);
                     case 'u': //Right
                         if (cursor_X + move_dist < board_W) { cursor_X += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_X = 1;
                         break;
+
                     case 'E': //Far down
-                        move_dist = (is_data_to_paste ? copy_Y_dist : 8);
+                        move_dist = (is_data_to_paste ? paste_Y_dist : 8);
                     case 'e': //Down
                         if (cursor_Y + move_dist < board_H) { cursor_Y += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = 1;
                         break;
+
                     case 'O': //Far left
-                        move_dist = (is_data_to_paste ? copy_X_dist : 16);
+                        move_dist = (is_data_to_paste ? paste_X_dist : 16);
                     case 'o': //Left
                         if (cursor_X - move_dist >= 0) { cursor_X -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_X = -1;
                         break;
+
                     case '\n': //New-line OR electrify cursor
                         if (is_label_mode) {
                             cursor_X = start_label_X;
@@ -892,7 +903,7 @@ int32_t main ()
                         break;
                     case 127: //Left-remove
                         if (cursor_X > 0) { --cursor_X; }
-                        prev_dir_Y = prev_dir_X = 0;
+                        prev_dir_Y = 0;
                         prev_dir_X = -1;
                         look = &board[cursor_X][cursor_Y];
                     case ' ': //Remove
@@ -903,6 +914,7 @@ int32_t main ()
                         *look = EMPTY;
                         to_move = (pressed_ch == 127 ? false : true);
                         break;
+
                     case 'h': //Wire
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
@@ -930,36 +942,45 @@ int32_t main ()
                         }
                         to_move = true;
                         break;
+
                     case 'H': //Auto-bridge
                         is_auto_bridge = !is_auto_bridge;
                         break;
+
                     case 'a': //Toggle wire
                         is_dir_wire = !is_dir_wire;
                         break;
+
                     case 't': //AND
                         *look = UN_AND;
                         to_move = true;
                         break;
+
                     case 'n': //NOT
                         *look = UN_NOT;
                         to_move = true;
                         break;
+
                     case 's': //XOR
                         *look = UN_XOR;
                         to_move = true;
                         break;
+
                     case 'r': //Bridge
                         *look = UN_BRIDGE;
                         to_move = true;
                         break;
+
                     case 'l': //Power
                         *look = PW_POWER;
                         to_move = true;
                         break;
+
                     case ';': //Wall
                         *look = UN_WALL;
                         to_move = true;
                         break;
+
                     case 'g': //North Diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
@@ -975,6 +996,7 @@ int32_t main ()
                         }
                         to_move = true;
                         break;
+
                     case 'C': //East diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_S_DIODE || *look == PW_S_DIODE
@@ -990,6 +1012,7 @@ int32_t main ()
                         }
                         to_move = true;
                         break;
+
                     case 'c': //South Diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
@@ -1005,6 +1028,7 @@ int32_t main ()
                         }
                         to_move = true;
                         break;
+
                     case 'G': //West diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_S_DIODE || *look == PW_S_DIODE
@@ -1020,20 +1044,24 @@ int32_t main ()
                         }
                         to_move = true;
                         break;
+
                     case 'd': //Delay
                         *look = UN_DELAY;
                         to_move = true;
                         break;
+
                     case 'D': //Stretcher
                         *look = U1_STRETCH;
                         to_move = true;
                         break;
+
                     case 'z': //Undo
                         if (u == 0) { u = UNDOS; }
                         --u;
                         board[undos[u][0]][undos[u][1]] = undos[u][2];
                         ++can_redo;
                         break;
+
                     case 'Z': //Redo
                         if (u == UNDOS) { u = 0; }
                         if (can_redo > 0) {
@@ -1042,8 +1070,9 @@ int32_t main ()
                             ++u;
                         }
                         break;
+
                     case 'x': //Copy
-                        if (is_copying = !is_copying) { //Are we not is_copying?
+                        if (is_copying = !is_copying) { //Are we not copying?
                             if (is_data_to_paste) { //Did we have something to paste?
                               //If so, clear it
                                 is_copying = false;
@@ -1057,15 +1086,16 @@ int32_t main ()
                                 paste_X = paste_X2 = -1;
                                 paste_Y = paste_Y2 = -1;
                             }
-                        } else { //We were is_copying
+                        } else { //We were copying
                           //Perform the copy
                             copy_X2 = cursor_X;
                             copy_Y2 = cursor_Y;
-                            copy_X_dist = (copy_X2 - copy_X);
-                            copy_Y_dist = (copy_Y2 - copy_Y);
+                            paste_X_dist = (copy_X2 - copy_X);
+                            paste_Y_dist = (copy_Y2 - copy_Y);
+                            is_no_copy_source = false;
                             copy_data->clear();
-                            for (int32_t x = copy_X; x < copy_X2; ++x) {
-                                for (int32_t y = copy_Y; y < copy_Y2; ++y) {
+                            for (int32_t y = copy_Y; y < copy_Y2; ++y) {
+                                for (int32_t x = copy_X; x < copy_X2; ++x) {
                                     copy_data->push_back(board[x][y]);
                                 }
                             }
@@ -1074,6 +1104,7 @@ int32_t main ()
                             cursor_Y = copy_Y;
                         }
                         break;
+
                     case 'b': //Paste -or- Bit
                         if (!is_data_to_paste) {
                             *look = UN_BIT;
@@ -1088,21 +1119,23 @@ int32_t main ()
                     case 'j': //Clear area
                     case 'J': //Paste mask
                         if (is_data_to_paste) {
-                            if (pressed_ch == 'k' || pressed_ch == 'j') { //Remove copied-from area (move/clear)?
-                                for (int32_t x = copy_X; x < copy_X2; ++x) {
-                                    for (int32_t y = copy_Y; y < copy_Y2; ++y) {
-                                        board[x][y] = EMPTY;
+                            if (!is_no_copy_source) {
+                                if (pressed_ch == 'k' || pressed_ch == 'j') { //Remove copied-from area (move/clear)?
+                                    for (int32_t x = copy_X; x < copy_X2; ++x) {
+                                        for (int32_t y = copy_Y; y < copy_Y2; ++y) {
+                                            board[x][y] = EMPTY;
+                                        }
                                     }
                                 }
                             }
-                            int32_t copy_X_end, copy_Y_end;
-                            copy_X_end = cursor_X + copy_X_dist;
-                            copy_Y_end = cursor_Y + copy_Y_dist;
+                            int32_t paste_X_end, paste_Y_end;
+                            paste_X_end = cursor_X + paste_X_dist;
+                            paste_Y_end = cursor_Y + paste_Y_dist;
                             if (pressed_ch != 'j') { //Paste copy data onto the board
                                 uint32_t i = 0;
-                                if (pressed_ch == 'K') { //Swap
-                                    for (int32_t x = copy_X, x2 = cursor_X; x < copy_X2; ++x, ++x2) {
-                                        for (int32_t y = copy_Y, y2 = cursor_Y; y < copy_Y2; ++y, ++y2) {
+                                if (pressed_ch == 'K' && !is_no_copy_source) { //Swap
+                                    for (int32_t y = copy_Y, y2 = cursor_Y; y < copy_Y2; ++y, ++y2) {
+                                        for (int32_t x = copy_X, x2 = cursor_X; x < copy_X2; ++x, ++x2) {
                                             board[x][y] = board[x2][y2];
                                             board[x2][y2] = copy_data->at(i);
                                             ++i;
@@ -1111,8 +1144,8 @@ int32_t main ()
                                     i = 0;
                                 }
                                 if (pressed_ch == 'm') { //x-flip paste
-                                    for (int32_t x = copy_X_end - 1; x >= cursor_X; --x) {
-                                        for (int32_t y = cursor_Y; y < copy_Y_end; ++y) {
+                                    for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
+                                        for (int32_t x = paste_X_end - 1; x >= cursor_X; --x) {
                                             board[x][y] = copy_data->at(i);
                                             if (board[x][y] == UN_E_DIODE) { board[x][y] = UN_W_DIODE; } //E Diode to W Diode
                                             else if (board[x][y] == UN_W_DIODE) { board[x][y] = UN_E_DIODE; } //W Diode to E Diode
@@ -1120,8 +1153,8 @@ int32_t main ()
                                         }
                                     }
                                 } else if (pressed_ch == 'w') { //y-flip paste
-                                    for (int32_t x = cursor_X; x < copy_X_end; ++x) {
-                                        for (int32_t y = copy_Y_end - 1; y >= cursor_Y; --y) {
+                                    for (int32_t y = paste_Y_end - 1; y >= cursor_Y; --y) {
+                                        for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                             board[x][y] = copy_data->at(i);
                                             if (board[x][y] == UN_S_DIODE) { board[x][y] = UN_N_DIODE; } //S Diode to N Diode
                                             else if (board[x][y] == UN_N_DIODE) { board[x][y] = UN_S_DIODE; } //N Diode to S Diode
@@ -1130,8 +1163,8 @@ int32_t main ()
                                     }
                                 } else { //Other paste
                                     if (pressed_ch == 'B') { //Unelectrified
-                                        for (int32_t x = cursor_X; x < copy_X_end; ++x) {
-                                            for (int32_t y = cursor_Y; y < copy_Y_end; ++y) {
+                                        for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
+                                            for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                                 uint8_t c = copy_data->at(i);
                                                 switch (c) {
                                                     case P3_STRETCH: case P2_STRETCH: case P1_STRETCH: c = U1_STRETCH; break;
@@ -1145,16 +1178,17 @@ int32_t main ()
                                         }
                                     } else { //Unmodified
                                         if (pressed_ch == 'J') { //Paste mask (' ' is not pasted)
-                                            for (int32_t x = cursor_X; x < copy_X_end; ++x) {
-                                             for (int32_t y = cursor_Y; y < copy_Y_end; ++y) {
+                                            for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
+                                                for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                                     char c = copy_data->at(i);
                                                     if (c) { board[x][y] = c; }
                                                     ++i;
                                                 }
                                             }
                                         } else { //Normal, full paste
-                                            for (int32_t x = cursor_X; x < copy_X_end; ++x) {
-                                                for (int32_t y = cursor_Y; y < copy_Y_end; ++y) {
+                                            for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
+                                                for (int32_t x = cursor_X; x < paste_X_end; ++x) {
+                                                    if (i >= copy_data->size()) { break; }
                                                     board[x][y] = copy_data->at(i);
                                                     ++i;
                                                 }
@@ -1163,23 +1197,24 @@ int32_t main ()
                                     }
                                 }
                             }
-                            if (pressed_ch == 'k' || pressed_ch == 'j' || pressed_ch == 'K') { //Was remove copied-from area (cut/clear) or have we finished (swap)?
+                            if ((pressed_ch == 'k' || pressed_ch == 'j' || pressed_ch == 'K') && !is_no_copy_source) { //Was remove copied-from area (cut/clear) or have we finished (swap)?
                                 copy_data->clear();
                                 is_data_to_paste = false;
                             }
                           //Set last pasted area markers
                             paste_X  = cursor_X;
                             paste_Y  = cursor_Y;
-                            paste_X2 = copy_X_end;
-                            paste_Y2 = copy_Y_end;
+                            paste_X2 = paste_X_end;
+                            paste_Y2 = paste_Y_end;
                           //Re-calculate the electrification area
                           //Use heuristic
                             if (paste_X < elec_X) { elec_X = paste_X; }
-                            else if (paste_X2 - 1 > elec_X2) { elec_X2 = paste_X2 - 1; }
+                            if (paste_X2 - 1 > elec_X2) { elec_X2 = paste_X2 - 1; }
                             if (paste_Y < elec_Y) { elec_Y = paste_Y; }
-                            else if (paste_Y2 - 1 > elec_Y2) { elec_Y2 = paste_Y2 - 1; }
+                            if (paste_Y2 - 1 > elec_Y2) { elec_Y2 = paste_Y2 - 1; }
                         }
                         break;
+
                     case 'q': //Quit
                     {
                         std::cout << "\033[0;37;40mAre you sure you want to quit (y/N)?" << std::endl;
@@ -1191,11 +1226,12 @@ int32_t main ()
                         }
                     }
                         break;
-                    case 'Y': //Save
+
+                    case 'Y': //Save project/component
                     {
-                        bool is_saving_component = is_data_to_paste;
+                        bool is_save_component = is_data_to_paste && !is_no_copy_source;
                         std::cout << "\033[0;37;40mSaving \033[1;37;40m";
-                        if (is_saving_component) {
+                        if (is_save_component) {
                             std::cout << "COMPONENT" << std::endl;
                         } else {
                             std::cout << "PROJECT" << std::endl;
@@ -1215,11 +1251,11 @@ int32_t main ()
                                 std::string save_data = "";
                                 
                                 uint32_t x1, y1, x2, y2;
-                                if (is_saving_component) {
+                                if (is_save_component) {
                                     x1 = copy_X;
                                     y1 = copy_Y;
-                                    x2 = copy_X2;
-                                    y2 = copy_Y2;
+                                    x2 = copy_X2 - 1;
+                                    y2 = copy_Y2 - 1;
                                 } else {
                                     x1 = elec_X;
                                     y1 = elec_Y;
@@ -1265,8 +1301,17 @@ int32_t main ()
                         }
                     }
                         break;
-                    case 'y': //Load
+
+                    case 'v': //Load component
+                    case 'y': //Load project
                     {
+                        bool is_load_component = pressed_ch == 'v';
+                        std::cout << "\033[0;37;40mLoading \033[1;37;40m";
+                        if (is_load_component) {
+                            std::cout << "COMPONENT" << std::endl;
+                        } else {
+                            std::cout << "PROJECT" << std::endl;
+                        }
                         std::cout << "\033[0;37;40mLoad name: ";
                         std::string load = getInput();
                         if (load.length()) {
@@ -1283,31 +1328,44 @@ int32_t main ()
                                 in.close();
                                 system("rm load");
                                 std::cout << "Loading..." << std::endl;
-                              //Empty the current board
-                                memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
-                              //Turn off all Switches
-                                for (uint32_t i = 0; i < 10; ++i) {
-                                    switches[i] = false;
-                                }
-                              //Remove all previous electricity
-                                memset(branch, 0, sizeof(branch));
-                                branches = 0;
-                              //Load project from decompressed data
+                              //Load project/component from decompressed data
                                 proj_name = load;
                                 uint64_t len = load_data.length();
-                                //Find rough project dimensions to place the project in the middle of the board
+                                uint32_t top_left_X = 0, top_left_Y = 0;
+                              //Either: find rough project dimensions to place the project in the middle of the board OR to define paste size for component
                                 uint32_t rough_W, rough_H;
-                                uint32_t top_left_X, top_left_Y;
                                 for (uint32_t i = 0; i < len; ++i) {
                                     if (load_data[i] == '\n') {
                                         rough_W = i;
                                         rough_H = len / i;
-                                        top_left_X = board_W/2 - rough_W/2;
-                                        top_left_Y = board_H/2 - rough_H/2;
+                                        if (is_load_component) {
+                                            paste_X_dist = rough_W;
+                                            paste_Y_dist = rough_H - 1;
+                                        } else {
+                                            top_left_X = board_W/2 - rough_W/2;
+                                            top_left_Y = board_H/2 - rough_H/2;
+                                        }
                                         break;
                                     }
                                 }
-                                //Iterate through data
+                              //Component/project specific preparations
+                                if (is_load_component) {
+                                    copy_data->clear();
+                                    is_data_to_paste = true;
+                                    is_no_copy_source = true;
+                                    copy_X = copy_Y = copy_X2 = copy_Y2 = paste_X = paste_Y = paste_X2 = paste_Y2 = -1;
+                                } else {
+                                  //Empty the current board
+                                    memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
+                                  //Turn off all Switches
+                                    for (uint32_t i = 0; i < 10; ++i) {
+                                        switches[i] = false;
+                                    }
+                                  //Remove all previous electricity
+                                    memset(branch, 0, sizeof(branch));
+                                    branches = 0;
+                                }
+                              //Iterate through data
                                 if (len > 0) {
                                     uint8_t load_char;
                                     int32_t x = top_left_X, y = top_left_Y;
@@ -1346,20 +1404,27 @@ int32_t main ()
                                             } else if (load_data[i] >= 97 && load_data[i] <= 122) { //Is label?
                                                 load_char = load_data[i];
                                             }
-                                            board[x][y] = load_char;
+                                            if (is_load_component) {
+                                                copy_data->push_back(load_char);
+                                            } else {
+                                                board[x][y] = load_char;
+                                            }
                                             ++x;
                                         }
                                     }
+                                    if (!is_load_component) {
+                                      //Move cursor
+                                        cursor_X = elec_X + 16;
+                                        cursor_Y = elec_Y + 8;
+                                    }
                                   //Recalculate electrification area
                                     elecReCalculate();
-                                  //Move cursor
-                                    cursor_X = elec_X + 16;
-                                    cursor_Y = elec_Y + 8;
                                 }
                             }
                         }
                     }
                         break;
+
                     case 'F': //GOTO
                     {
                         std::cout << "Enter x coord: ";
@@ -1370,23 +1435,29 @@ int32_t main ()
                         cursor_Y = atoi(ycoord.c_str());
                     }
                         break;
+
                     case 'f': //Crosshairs
                         crosshairs = !crosshairs;
                         break;
+
                     case 'p': //Next elec
                         elec();
                         break;
+
                     case 'P': //Toggle pause
                         paused = !paused;
                         break;
+
                     case 'i': //Slow-mo
                         is_slow_mo = !is_slow_mo;
                         is_fast_mo = false;
                         break;
+
                     case 'I': //Fast-mo
                         is_fast_mo = !is_fast_mo;
                         is_slow_mo = false;
                         break;
+
                     case '\'': //Label mode
                         is_label_mode = !is_label_mode;
                         start_label_X = cursor_X;
@@ -1447,7 +1518,7 @@ int32_t main ()
                 if (cursor_X > board_W) { cursor_X = board_W; }
                 if (cursor_Y > board_H) { cursor_Y = board_H; }
               //Copy/paste bounds check
-                if (is_copying && (cursor_X < copy_X || cursor_Y < copy_Y)) //Is the user trying to go out of is_copying bounds while is_copying?
+                if (is_copying && (cursor_X < copy_X || cursor_Y < copy_Y)) //Is the user trying to go out of copying bounds while copying?
                 {
                     cursor_X = copy_X;
                     cursor_Y = copy_Y;
