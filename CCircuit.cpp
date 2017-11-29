@@ -342,7 +342,7 @@ void elecReCalculate ()
 
 
 
-bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
+bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
 {
     if (_X < 0 || _Y < 0 || _X >= board_W || _Y >= board_H) { return false; }
     char look = board[_X][_Y];
@@ -350,7 +350,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
     uint8_t wire;
     char xd = 0;
     char yd = 0;
-    switch (dir) {
+    switch (_dir) {
         case NORTH: diode = PW_S_DIODE; wire = PW_V_WIRE; yd = -1; break; //North: Powered S Diode, V Wire
         case EAST:  diode = PW_W_DIODE; wire = PW_H_WIRE; xd =  1; break; //East:  Powered W Diode, H Wire
         case SOUTH: diode = PW_N_DIODE; wire = PW_V_WIRE; yd =  1; break; //South: Powered N Diode, V Wire
@@ -374,7 +374,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
         is_powered = switches[look - 50];
     }
   //Return for if checking for dead
-    if (dead) {
+    if (_is_dead) {
         --diode;
         --wire;
         if (is_power_present) { return !is_powered; } //There's a Switch
@@ -384,7 +384,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
          || look == wire                              //
          || look == diode                             //
          || look == UN_BIT                            //
-         || (dir == NORTH ? look == UN_DELAY : false) //
+         || (_dir == NORTH ? look == UN_DELAY : false) //
          || look == U1_STRETCH                        // There's a dead Wire/Bridge/D Wire/Diode/Bit/Delay/Stretcher
            ) { return true; }
         return false; //Anything else could never power us
@@ -395,7 +395,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t dir, bool dead = false)
         || look == PW_BIT                       //
         || look == PW_POWER                     //
         || look == diode                        // Powered by Wire/D Wire/Bit/Power/Diode
-        || (dir == NORTH ? look == PW_DELAY     //
+        || (_dir == NORTH ? look == PW_DELAY    //
                         || look == P1_STRETCH   //
                         || look == P2_STRETCH   //
                         || look == P3_STRETCH   //
@@ -819,7 +819,7 @@ std::string autoCompleteForFile (std::string input)
             }
         }
     }
-    if (!agreement) { return input; } //There are no files starting with that name
+    if (!agreement) { return input; } //There are no files starting with that text
   //Find consensus in the results for look-ahead
     std::string consensus = input;
     std::string proposal = consensus;
@@ -1283,7 +1283,7 @@ int32_t main ()
                                                     ++i;
                                                 }
                                             }
-                                        } else if (pressed_ch == 'b') { //Normal, full paste
+                                        } else if (pressed_ch == 'b' || pressed_ch == 'k') { //Normal, full paste
                                             for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
                                                 for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                                     if (i >= copy_data->size()) { break; }
