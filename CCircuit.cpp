@@ -1538,12 +1538,14 @@ int32_t main ()
 
                     case 'F': //GOTO
                     {
-                        std::cout << "Enter x coord: ";
-                        std::string xcoord = getInput();
-                        std::cout << "Enter y coord: ";
-                        std::string ycoord = getInput();
-                        cursor_X = atoi(xcoord.c_str());
-                        cursor_Y = atoi(ycoord.c_str());
+                        std::cout << "\033[0;37;40mEnter X coord: ";
+                        std::string x_coord = getInput();
+                        if (!x_coord.length()) { break; }
+                        std::cout << "\nEnter Y coord: ";
+                        std::string y_coord = getInput();
+                        if (!y_coord.length()) { break; }
+                        cursor_X = atoi(x_coord.c_str());
+                        cursor_Y = atoi(y_coord.c_str());
                     }
                         break;
 
