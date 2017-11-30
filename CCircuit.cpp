@@ -1358,7 +1358,7 @@ int32_t main ()
                               //Recalculate electrification area
                                 elecReCalculate();
                               //Save project to storage
-                                proj_name = save;
+                                if (!is_save_component) { proj_name = save; }
                                 std::cout << "Saving..." << std::endl;
                                 system(("rm " + save + ".gz &> /dev/null").c_str());
                                 std::string save_data = "";
