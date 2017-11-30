@@ -852,7 +852,7 @@ std::string autoCompleteForFile (std::string input)
 
 
 bool inputted;
-std::string getInput (std::string _pretext = "")
+std::string getInput (std::string _pretext = "", bool to_autocomplete = true)
 {
     std::string to_return = _pretext;
     std::cout << to_return;
@@ -865,7 +865,7 @@ std::string getInput (std::string _pretext = "")
             } else if (pressed_ch == 27) { //Escape
                 to_return = "";
                 inputted = true;
-            } else if (pressed_ch == 9) { //Autocomplete
+            } else if (pressed_ch == 9 && to_autocomplete) { //Autocomplete
                 std::string auto_completed = autoCompleteForFile(to_return);
                 std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
                 std::cout << auto_completed_end;
@@ -884,12 +884,14 @@ std::string getInput (std::string _pretext = "")
                     to_return += pressed_ch;
                     std::cout << pressed_ch; //Echo it to the user
                 }
-              //Echo autocomplete results
-                std::string auto_completed = autoCompleteForFile(to_return);
-                std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
-                std::cout << "\033[1;30;40m" << auto_completed_end;
-                for (uint16_t i = 0, ilen = auto_completed_end.length(); i < ilen; ++i) { std::cout << "\b"; }
-                std::cout << "\033[0;37;40m";
+                if (to_autocomplete) {
+                  //Echo autocomplete results
+                    std::string auto_completed = autoCompleteForFile(to_return);
+                    std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
+                    std::cout << "\033[1;30;40m" << auto_completed_end;
+                    for (uint16_t i = 0, ilen = auto_completed_end.length(); i < ilen; ++i) { std::cout << "\b"; }
+                    std::cout << "\033[0;37;40m";
+                }
             }
             fflush(stdout);
         }
@@ -918,7 +920,7 @@ int32_t main ()
               << "\nhH\t\tplace wire, toggle auto-bridge for wires and diodes"
               << "\na\t\ttoggle general use wire/directional wire"
               << "\nL\t\tfar lay under cursor"
-              << "\nfF\t\tcrosshairs, goto coord"
+              << "\nfF\t\tcrosshairs, go-to coord"
               << "\n0-9\t\tplace/toggle switch"
               << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, power"
               << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
@@ -1536,13 +1538,13 @@ int32_t main ()
                     }
                         break;
 
-                    case 'F': //GOTO
+                    case 'F': //Go-to
                     {
                         std::cout << "\033[0;37;40mEnter X coord: ";
-                        std::string x_coord = getInput();
+                        std::string x_coord = getInput(std::to_string(cursor_X), false);
                         if (!x_coord.length()) { break; }
                         std::cout << "\nEnter Y coord: ";
-                        std::string y_coord = getInput();
+                        std::string y_coord = getInput(std::to_string(cursor_Y), false);
                         if (!y_coord.length()) { break; }
                         cursor_X = atoi(x_coord.c_str());
                         cursor_Y = atoi(y_coord.c_str());
