@@ -24,7 +24,8 @@ const uint32_t board_H = 4096;
 char board[board_W][board_H];
 int32_t cursor_X = 16;
 int32_t cursor_Y = 8;
-bool elec_cursor = false;
+bool to_elec_cursor = false;
+bool to_copy_cursor = false;
 
 uint8_t switches[10];
 bool placed_switches[10];
@@ -304,13 +305,13 @@ void display ()
                 }
               //Paste area
                 else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
-                    buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
+                    buff = "\033[30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
                 }
             }
           //Crosshairs and cursor
             if ((crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
                 buff = buff.substr(buff.length() - 1, buff.length());
-                buff = "\033[0;37;4" + std::string(is_data_to_paste ? "6" : (elec_cursor ? "4" : "0")) + "m" + buff;
+                buff = "\033[0;37;4" + std::string(is_data_to_paste ? (to_copy_cursor ? "0" : "6") : (to_elec_cursor ? "4" : "0")) + "m" + buff;
             }
 
             buffer += buff;
@@ -318,6 +319,7 @@ void display ()
     }
     std::cout << buffer;
     fflush(stdout);
+    to_copy_cursor = false;
 }
 
 
@@ -475,8 +477,8 @@ void elec () //Electrify the board appropriately
         }
     }
   //Electrify cursor?
-    if (elec_cursor) {
-        elec_cursor = false;
+    if (to_elec_cursor) {
+        to_elec_cursor = false;
         addBranch(cursor_X, cursor_Y, 0);
     }
   //Wires & inline components
@@ -996,7 +998,7 @@ int32_t main ()
                             cursor_X = start_label_X;
                             if (cursor_Y + 1 < board_H) { ++cursor_Y; }
                         } else {
-                            elec_cursor = true;
+                            to_elec_cursor = true;
                         }
                         break;
                     case 127: //Left-remove
@@ -1217,6 +1219,7 @@ int32_t main ()
                     case 'j': //Clear area
                     case 'J': //Paste mask
                         if (is_data_to_paste) {
+                            to_copy_cursor = true;
                             if (!is_no_copy_source) {
                                 if (pressed_ch == 'k' || pressed_ch == 'j') { //Remove copied-from area (move/clear)?
                                     for (int32_t x = copy_X; x < copy_X2; ++x) {
