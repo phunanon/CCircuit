@@ -22,8 +22,9 @@ bool run = true;
 const uint32_t board_W = 4096;
 const uint32_t board_H = 4096;
 char board[board_W][board_H];
-int32_t cursor_X = 16;
-int32_t cursor_Y = 8;
+const uint8_t MOVE_FAR = 8;
+int32_t cursor_X = MOVE_FAR*2;
+int32_t cursor_Y = MOVE_FAR;
 bool to_elec_cursor = false;
 bool to_copy_cursor = false;
 
@@ -916,6 +917,7 @@ int32_t main ()
               << "\n>OEU\t\tfar up, far left, far down, far right"
               << "\nhH\t\tplace wire, toggle auto-bridge for wires and diodes"
               << "\na\t\ttoggle general use wire/directional wire"
+              << "\nL\t\tfar lay under cursor"
               << "\nfF\t\tcrosshairs, goto coord"
               << "\n0-9\t\tplace/toggle switch"
               << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, power"
@@ -947,6 +949,7 @@ int32_t main ()
         }
         while (kbhit()) {
             bool to_move = false; //Should we auto-move after pressing?
+            bool to_recalc = false; //Should we recalculate electrification area using a heuristic?
             char *look = &board[cursor_X][cursor_Y];
             prev_X = cursor_X;
             prev_Y = cursor_Y;
@@ -962,7 +965,7 @@ int32_t main ()
                 switch (pressed_ch) {
 
                     case '>': //Far up
-                        move_dist = (is_data_to_paste ? paste_Y_dist : 8);
+                        move_dist = (is_data_to_paste ? paste_Y_dist : MOVE_FAR);
                     case '.': //Up
                         if (cursor_Y - move_dist >= 0) { cursor_Y -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
@@ -970,7 +973,7 @@ int32_t main ()
                         break;
 
                     case 'U': //Far right
-                        move_dist = (is_data_to_paste ? paste_X_dist : 16);
+                        move_dist = (is_data_to_paste ? paste_X_dist : MOVE_FAR*2);
                     case 'u': //Right
                         if (cursor_X + move_dist < board_W) { cursor_X += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
@@ -978,7 +981,7 @@ int32_t main ()
                         break;
 
                     case 'E': //Far down
-                        move_dist = (is_data_to_paste ? paste_Y_dist : 8);
+                        move_dist = (is_data_to_paste ? paste_Y_dist : MOVE_FAR);
                     case 'e': //Down
                         if (cursor_Y + move_dist < board_H) { cursor_Y += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
@@ -986,7 +989,7 @@ int32_t main ()
                         break;
 
                     case 'O': //Far left
-                        move_dist = (is_data_to_paste ? paste_X_dist : 16);
+                        move_dist = (is_data_to_paste ? paste_X_dist : MOVE_FAR*2);
                     case 'o': //Left
                         if (cursor_X - move_dist >= 0) { cursor_X -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
@@ -1074,6 +1077,13 @@ int32_t main ()
                     case 'l': //Power
                         *look = PW_POWER;
                         to_move = true;
+                        break;
+
+                    case 'L': //Far lay
+                        for (uint8_t i = 0; i < MOVE_FAR && ((cursor_X += prev_dir_X) | (cursor_Y += prev_dir_Y)); ++i) {
+                            board[cursor_X][cursor_Y] = *look;
+                        }
+                        to_recalc = true;
                         break;
 
                     case ';': //Wall
@@ -1517,8 +1527,8 @@ int32_t main ()
                                     elecReCalculate();
                                     if (!is_load_component) {
                                       //Move cursor
-                                        cursor_X = elec_X + 16;
-                                        cursor_Y = elec_Y + 8;
+                                        cursor_X = elec_X + MOVE_FAR*2;
+                                        cursor_Y = elec_Y + MOVE_FAR;
                                     }
                                 }
                             }
@@ -1586,7 +1596,7 @@ int32_t main ()
                     }
                 }
               //Re-calculate the electrification area using heuristic
-                if (to_move) {
+                if (to_move || to_recalc) {
                     int32_t x = cursor_X;
                     int32_t y = cursor_Y;
                     if (x < elec_X) { elec_X = x; }
