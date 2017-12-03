@@ -140,6 +140,7 @@ void resizeScreen ()
 #define PW_AND      33
 #define PW_NOT      34
 #define PW_XOR      35
+#define NOTHING     36
 
 bool crosshairs = false;
 void display ()
@@ -177,116 +178,155 @@ void display ()
     buffer += space + "\033[1;4m" + proj_name + "\033[0m";
   //Board
     int32_t sx, sy;
+    char prev_char = '\n';
     for (int32_t y = board_crop_Y, sy = 0; y < board_crop_Y2; ++y, ++sy) {
         buffer += '\n';
         for (int32_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
             buff = " ";
             char *look = &board[x][y];
+            std::string colour = "\033[";
             switch (*look) {
-                case EMPTY:
-                    buff = (x >= elec_X && x < elec_X2 + 1 && y >= elec_Y && y < elec_Y2 + 1 ? "\033[0;30;47m " : "\033[0;30;47m."); //Nothing
+                case EMPTY: //Empty
+                    colour += "0;30;47";
+                    buff = (x >= elec_X && x < elec_X2 + 1 && y >= elec_Y && y < elec_Y2 + 1 ? " " : ".");
                     break;
-                case UN_WIRE:
-                    buff = "\033[0;30;47m#"; //Unpowered Wire
+                case UN_WIRE: //Unpowered Wire
+                    colour += "0;30;47";
+                    buff = "#";
                     break;
-                case PW_WIRE:
-                    buff = "\033[0;30;42m#"; //Powered Wire
+                case PW_WIRE: //Powered Wire
+                    colour += "0;30;42";
+                    buff = "#";
                     break;
-                case UN_AND:
-                    buff = "\033[0;37;43mA"; //AND
+                case UN_AND: //AND
+                    colour += "0;37;43";
+                    buff = "A";
                     break;
-                case PW_AND:
-                    buff = "\033[1;37;43mA"; //Powered AND
+                case PW_AND: //Powered AND
+                    colour += "1;37;43";
+                    buff = "A";
                     break;
-                case UN_NOT:
-                    buff = "\033[0;37;41mN"; //NOT
+                case UN_NOT: //NOT
+                    colour += "0;37;41";
+                    buff = "N";
                     break;
-                case PW_NOT:
-                    buff = "\033[1;37;41mN"; //Powered NOT
+                case PW_NOT: //Powered NOT
+                    colour += "1;37;41";
+                    buff = "N";
                     break;
-                case UN_XOR:
-                    buff = "\033[0;37;45mX"; //XOR
+                case UN_XOR: //XOR
+                    colour += "0;37;45";
+                    buff = "X";
                     break;
-                case PW_XOR:
-                    buff = "\033[1;37;45mX"; //Powered XOR
+                case PW_XOR: //Powered XOR
+                    colour += "1;37;45";
+                    buff = "X";
                     break;
-                case UN_BRIDGE:
-                    buff = "\033[0;30;47m+"; //Bridge
+                case UN_BRIDGE: //Bridge
+                    colour += "0;30;47";
+                    buff = "+";
                     break;
-                case PW_BRIDGE:
-                    buff = "\033[0;30;42m+"; //Powered Bridge
+                case PW_BRIDGE: //Powered Bridge
+                    colour += "0;30;42";
+                    buff = "+";
                     break;
-                case PW_POWER:
-                    buff = "\033[1;37;44m@"; //Power
+                case PW_POWER: //Power
+                    colour += "1;37;44";
+                    buff = "@";
                     break;
-                case UN_WALL:
-                    buff = "\033[1;30;40m;"; //Wall
+                case UN_WALL: //Wall
+                    colour += "1;30;40";
+                    buff = ";";
                     break;
-                case UN_BIT:
-                    buff = "\033[1;30;47mB"; //Bit
+                case UN_BIT: //Bit
+                    colour += "1;30;47";
+                    buff = "B";
                     break;
-                case PW_BIT:
-                    buff = "\033[1;37;44mB"; //Powered Bit
+                case PW_BIT: //Powered Bit
+                    colour += "1;37;44";
+                    buff = "B";
                     break;
-                case UN_N_DIODE:
-                    buff = "\033[0;30;47m^"; //North Diode
+                case UN_N_DIODE: //North Diode
+                    colour += "0;30;47";
+                    buff = "^";
                     break;
-                case PW_N_DIODE:
-                    buff = "\033[0;30;42m^"; //Powered North Diode
+                case PW_N_DIODE: //Powered North Diode
+                    colour += "0;30;42";
+                    buff = "^";
                     break;
-                case UN_E_DIODE:
-                    buff = "\033[0;30;47m>"; //East Diode
+                case UN_E_DIODE: //East Diode
+                    colour += "0;30;47";
+                    buff = ">";
                     break;
-                case PW_E_DIODE:
-                    buff = "\033[0;30;42m>"; //Powered East Diode
+                case PW_E_DIODE: //Powered East Diode
+                    colour += "0;30;42";
+                    buff = ">";
                     break;
-                case UN_S_DIODE:
-                    buff = "\033[0;30;47mV"; //South Diode
+                case UN_S_DIODE: //South Diode
+                    colour += "0;30;47";
+                    buff = "V";
                     break;
-                case PW_S_DIODE:
-                    buff = "\033[0;30;42mV"; //Powered South Diode
+                case PW_S_DIODE: //Powered South Diode
+                    colour += "0;30;42";
+                    buff = "V";
                     break;
-                case UN_W_DIODE:
-                    buff = "\033[0;30;47m<"; //West Diode
+                case UN_W_DIODE: //West Diode
+                    colour += "0;30;47";
+                    buff = "<";
                     break;
-                case PW_W_DIODE:
-                    buff = "\033[0;30;42m<"; //Powered West Diode
+                case PW_W_DIODE: //Powered West Diode
+                    colour += "0;30;42";
+                    buff = "<";
                     break;
-                case UN_DELAY:
-                    buff = "\033[1;30;47m%"; //Delay
+                case UN_DELAY: //Delay
+                    colour += "1;30;47";
+                    buff = "%";
                     break;
-                case PW_DELAY:
-                    buff = "\033[1;30;42m%"; //Powered Delay
+                case PW_DELAY: //Powered Delay
+                    colour += "1;30;42";
+                    buff = "%";
                     break;
                 case U1_STRETCH:
                 case P1_STRETCH:
-                    buff = "\033[1;30;47m$"; //Stretcher
+                    colour += "1;30;47";
+                    buff = "$"; //Stretcher
                     break;
                 case P2_STRETCH:
                 case P3_STRETCH:
-                    buff = "\033[1;30;42m$"; //Powered Stretcher
+                    colour += "1;30;42";
+                    buff = "$"; //Powered Stretcher
                     break;
                 case UN_H_WIRE:
-                    buff = "\033[0;30;47m-"; //Horizontal Wire
+                    colour += "0;30;47";
+                    buff = "-"; //Horizontal Wire
                     break;
                 case PW_H_WIRE:
-                    buff = "\033[0;30;42m-"; //Powered Horizontal Wire
+                    colour += "0;30;42";
+                    buff = "-"; //Powered Horizontal Wire
                     break;
                 case UN_V_WIRE:
-                    buff = "\033[0;30;47m|"; //Vertical Wire
+                    colour += "0;30;47";
+                    buff = "|"; //Vertical Wire
                     break;
                 case PW_V_WIRE:
-                    buff = "\033[0;30;42m|"; //Powered Vertical Wire
+                    colour += "0;30;42";
+                    buff = "|"; //Powered Vertical Wire
                     break;
             }
+
+            colour += "m";
+            if (prev_char != *look) { buff = colour + buff; }
+            prev_char = *look;
             
             if (*look >= 50 && *look <= 59) { //Power
                 switch_num = *look - 50;
                 buff = (switches[switch_num] ? "\033[1;33;44m" + std::to_string(switch_num) : "\033[1;31;47m" + std::to_string(switch_num)) ; //Power switch
+                prev_char = NOTHING;
             }
             
             if (*look >= 97 && *look <= 122) { //Label
                 buff = "\033[4;1;34;47m" + std::string(look, look + 1);
+                prev_char = NOTHING;
             }
 
             if (is_copying) { //Copy box
@@ -294,6 +334,7 @@ void display ()
                 if (x == cursor_X && y >= copy_Y - 1 && y <= cursor_Y)      { buff = "\033[1;30;46mx"; } //East
                 if (y == cursor_Y && x >= copy_X - 1 && x <= cursor_X)      { buff = "\033[1;30;46mx"; } //South
                 if (x == copy_X - 1 && y >= copy_Y - 1 && y <= cursor_Y)    { buff = "\033[1;30;46mx"; } //West
+                prev_char = NOTHING;
             }
             if (is_data_to_paste) {
               //Copy markers
@@ -308,11 +349,13 @@ void display ()
                 else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
                     buff = "\033[30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
                 }
+                prev_char = NOTHING;
             }
           //Crosshairs and cursor
             if ((crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
                 buff = buff.substr(buff.length() - 1, buff.length());
                 buff = "\033[0;37;4" + std::string(is_data_to_paste ? (to_copy_cursor ? "0" : "6") : (to_elec_cursor ? "4" : "0")) + "m" + buff;
+                prev_char = NOTHING;
             }
 
             buffer += buff;
