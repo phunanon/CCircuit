@@ -142,7 +142,7 @@ void resizeScreen ()
 #define PW_XOR      35
 #define NOTHING     36
 
-bool crosshairs = false;
+bool to_crosshairs = false;
 void display ()
 {
     resizeScreen();
@@ -352,7 +352,7 @@ void display ()
                 prev_colour = "";
             }
           //Crosshairs and cursor
-            if ((crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
+            if ((to_crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
                 buff = buff.substr(buff.length() - 1, buff.length());
                 buff = "\033[0;37;4" + std::string(is_data_to_paste ? (to_copy_cursor ? "0" : "6") : (to_elec_cursor ? "4" : "0")) + "m" + buff;
                 prev_colour = "";
@@ -1595,7 +1595,7 @@ int32_t main ()
                         break;
 
                     case 'f': //Crosshairs
-                        crosshairs = !crosshairs;
+                        to_crosshairs = !to_crosshairs;
                         break;
 
                     case 'p': //Next elec
