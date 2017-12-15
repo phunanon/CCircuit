@@ -641,25 +641,25 @@ void elec () //Electrify the board appropriately
             bool can_H = (our_pos != UN_V_WIRE && our_pos != PW_V_WIRE) && !is_splitter;
             if (can_V && *dir != SOUTH && branch[b].y > 0)      { //North
                 char *look = &board[branch[b].x][branch[b].y - 1];
-                if (*look == UN_WIRE || *look == UN_N_DIODE || *look == UN_L_SPLIT || *look == UN_R_SPLIT) { ++routes; can_north = true; }
+                if (*look == UN_WIRE || *look == UN_N_DIODE || is_splitter) { ++routes; can_north = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_north = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_north = true; *look = PW_BRIDGE; }
             }
             if (can_V && *dir != NORTH && branch[b].y < board_H) { //South
                 char *look = &board[branch[b].x][branch[b].y + 1];
-                if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH || *look == UN_L_SPLIT || *look == UN_R_SPLIT) { ++routes; can_south = true; }
+                if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH || is_splitter) { ++routes; can_south = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_south = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_south = true; *look = PW_BRIDGE; }
             }
             if (can_H && *dir != WEST && branch[b].x < board_W) { //East
                 char *look = &board[branch[b].x + 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_E_DIODE || *look == UN_L_SPLIT || *look == UN_R_SPLIT) { ++routes; can_east = true; }
+                if (*look == UN_WIRE || *look == UN_E_DIODE || is_splitter) { ++routes; can_east = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_east = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_east = true; *look = PW_BRIDGE; }
             }
             if (can_H && *dir != EAST && branch[b].x > 0)      { //West
                 char *look = &board[branch[b].x - 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_W_DIODE || *look == UN_L_SPLIT || *look == UN_R_SPLIT) { ++routes; can_west = true; }
+                if (*look == UN_WIRE || *look == UN_W_DIODE || is_splitter) { ++routes; can_west = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_west = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_west = true; *look = PW_BRIDGE; }
             }
