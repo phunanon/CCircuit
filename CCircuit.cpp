@@ -2,6 +2,7 @@
 //Move variables into local scope
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
+//Ensure paste text fits on screen at all sizes
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -584,10 +585,46 @@ void elec () //Electrify the board appropriately
               //Handle branch direction
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
-                    case NORTH: if (is_bridge || is_wall) { --branch[b].y; } else { routes += 2; can_north = true; can_east  =  is_L; can_west  = !is_L; } break;
-                    case EAST:  if (is_bridge || is_wall) { ++branch[b].x; } else { routes += 2; can_east  = true; can_north =  is_L; can_south = !is_L; } break;
-                    case SOUTH: if (is_bridge || is_wall) { ++branch[b].y; } else { routes += 2; can_south = true; can_east  = !is_L; can_west  =  is_L; } break;
-                    case WEST:  if (is_bridge || is_wall) { --branch[b].x; } else { routes += 2; can_west  = true; can_north = !is_L; can_south =  is_L; } break;
+                    case NORTH:
+                        if (is_bridge || is_wall) {
+                            --branch[b].y;
+                        } else {
+                            can_north = true;
+                            can_east  =  is_L && (board[branch[b].x+1][branch[b].y] != UN_L_SPLIT);
+                            can_west  = !is_L && (board[branch[b].x-1][branch[b].y] != UN_R_SPLIT);
+                            routes += 1 + can_east + can_west;
+                        }
+                        break;
+                    case EAST:
+                        if (is_bridge || is_wall) {
+                            ++branch[b].x;
+                        } else {
+                            can_east  = true;
+                            can_north =  is_L && (board[branch[b].x][branch[b].y-1] != UN_L_SPLIT);
+                            can_south = !is_L && (board[branch[b].x][branch[b].y+1] != UN_R_SPLIT);
+                            routes += 1 + can_north + can_south;
+                        }
+                        break;
+                    case SOUTH:
+                        if (is_bridge || is_wall) {
+                            ++branch[b].y;
+                        } else {
+                            can_south = true;
+                            can_east  = !is_L && (board[branch[b].x+1][branch[b].y] != UN_R_SPLIT);
+                            can_west  =  is_L && (board[branch[b].x-1][branch[b].y] != UN_L_SPLIT);
+                            routes += 1 + can_east + can_west;
+                        }
+                        break;
+                    case WEST:
+                        if (is_bridge || is_wall) {
+                            --branch[b].x;
+                        } else {
+                            can_west  = true;
+                            can_north = !is_L && (board[branch[b].x][branch[b].y-1] != UN_R_SPLIT);
+                            can_south =  is_L && (board[branch[b].x][branch[b].y+1] != UN_L_SPLIT);
+                            routes += 1 + can_north + can_south;
+                        }
+                        break;
                 }
                 skipped = true;
                 if (is_bridge || is_wall) { --b; continue; }
