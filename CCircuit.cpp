@@ -117,34 +117,35 @@ void resizeScreen ()
 #define PW_BRIDGE   7
 #define PW_POWER    8
 #define UN_WALL     9
-#define UN_S_DIODE  10
-#define PW_S_DIODE  11
-#define UN_BIT      12
-#define PW_BIT      13
-#define UN_N_DIODE  14
-#define PW_N_DIODE  15
-#define UN_E_DIODE  16
-#define PW_E_DIODE  17
-#define UN_W_DIODE  18
-#define PW_W_DIODE  19
-#define UN_L_SPLIT  20
-#define PW_L_SPLIT  21
-#define UN_R_SPLIT  22
-#define PW_R_SPLIT  23
-#define U1_STRETCH  24
-#define P1_STRETCH  25
-#define P2_STRETCH  26
-#define P3_STRETCH  27
-#define UN_DELAY    28
-#define PW_DELAY    29
-#define UN_H_WIRE   30
-#define PW_H_WIRE   31
-#define UN_V_WIRE   32
-#define PW_V_WIRE   33
-#define PW_AND      34
-#define PW_NOT      35
-#define PW_XOR      36
-#define NOTHING     37
+#define E_WALL      10
+#define UN_S_DIODE  11
+#define PW_S_DIODE  12
+#define UN_BIT      13
+#define PW_BIT      14
+#define UN_N_DIODE  15
+#define PW_N_DIODE  16
+#define UN_E_DIODE  17
+#define PW_E_DIODE  18
+#define UN_W_DIODE  19
+#define PW_W_DIODE  20
+#define UN_L_SPLIT  21
+#define PW_L_SPLIT  22
+#define UN_R_SPLIT  23
+#define PW_R_SPLIT  24
+#define U1_STRETCH  25
+#define P1_STRETCH  26
+#define P2_STRETCH  27
+#define P3_STRETCH  28
+#define UN_DELAY    29
+#define PW_DELAY    30
+#define UN_H_WIRE   31
+#define PW_H_WIRE   32
+#define UN_V_WIRE   33
+#define PW_V_WIRE   34
+#define PW_AND      35
+#define PW_NOT      36
+#define PW_XOR      37
+#define NOTHING     38
 
 bool to_crosshairs = false;
 void display ()
@@ -241,6 +242,10 @@ void display ()
                 case UN_WALL: //Wall
                     colour += "1;30;40";
                     buff = ";";
+                    break;
+                case E_WALL: //Conductive Wall
+                    colour += "1;30;40";
+                    buff = ":";
                     break;
                 case UN_BIT: //Bit
                     colour += "1;30;47";
@@ -570,18 +575,22 @@ void elec () //Electrify the board appropriately
             else if (*look == UN_WIRE)   { *look = PW_WIRE; }    //Electrify wire
             else if (*look == UN_H_WIRE) { *look = PW_H_WIRE; }  //Electrify H Wire
             else if (*look == UN_V_WIRE) { *look = PW_V_WIRE; }  //Electrify V Wire
-            else if (is_bridge || is_splitter) { //If we've ended up in a Bridge, or a Splitter, continue in the direction we were going
+            else if (*look == E_WALL || is_bridge || is_splitter) { //If we've ended up in a Bridge, or Conductive Wall, or a Splitter, continue in the direction we were going
                 bool is_L = (*look == UN_L_SPLIT);
-                *look = (is_bridge ? PW_BRIDGE : (is_L ? PW_L_SPLIT : PW_R_SPLIT)); //Electrify
+                bool is_wall = (*look == E_WALL);
+              //Electrify
+                if (is_bridge) { *look = PW_BRIDGE; }
+                if (is_splitter) { *look = (is_L ? PW_L_SPLIT : PW_R_SPLIT); }
+              //Handle branch direction
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
-                    case NORTH: if (is_bridge) { --branch[b].y; } else { routes += 2; can_north = true; can_east  =  is_L; can_west  = !is_L; } break;
-                    case EAST:  if (is_bridge) { ++branch[b].x; } else { routes += 2; can_east  = true; can_north =  is_L; can_south = !is_L; } break;
-                    case SOUTH: if (is_bridge) { ++branch[b].y; } else { routes += 2; can_south = true; can_east  = !is_L; can_west  =  is_L; } break;
-                    case WEST:  if (is_bridge) { --branch[b].x; } else { routes += 2; can_west  = true; can_north = !is_L; can_south =  is_L; } break;
+                    case NORTH: if (is_bridge || is_wall) { --branch[b].y; } else { routes += 2; can_north = true; can_east  =  is_L; can_west  = !is_L; } break;
+                    case EAST:  if (is_bridge || is_wall) { ++branch[b].x; } else { routes += 2; can_east  = true; can_north =  is_L; can_south = !is_L; } break;
+                    case SOUTH: if (is_bridge || is_wall) { ++branch[b].y; } else { routes += 2; can_south = true; can_east  = !is_L; can_west  =  is_L; } break;
+                    case WEST:  if (is_bridge || is_wall) { --branch[b].x; } else { routes += 2; can_west  = true; can_north = !is_L; can_south =  is_L; } break;
                 }
                 skipped = true;
-                if (is_bridge) { --b; continue; }
+                if (is_bridge || is_wall) { --b; continue; }
             }
             else if (*look == UN_N_DIODE || *look == PW_N_DIODE) { //Upon an N Diode, go North
                 if (*dir == SOUTH) { continue; } //Trying to go past the diode
@@ -1167,6 +1176,11 @@ int32_t main ()
                         to_move = true;
                         break;
 
+                    case ':': //Conductive Wall
+                        *look = E_WALL;
+                        to_move = true;
+                        break;
+
                     case 'g': //North Diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
@@ -1471,6 +1485,7 @@ int32_t main ()
                                             case UN_BRIDGE: case PW_BRIDGE:      save_data += '+'; break;
                                             case PW_POWER:                       save_data += '@'; break;
                                             case UN_WALL:                        save_data += ';'; break;
+                                            case E_WALL:                         save_data += ':'; break;
                                             case UN_BIT: case PW_BIT:            save_data += 'B'; break;
                                             case UN_N_DIODE: case PW_N_DIODE:    save_data += '^'; break;
                                             case UN_E_DIODE: case PW_E_DIODE:    save_data += '>'; break;
@@ -1585,6 +1600,7 @@ int32_t main ()
                                                 case '@':  load_char = PW_POWER;   break;
                                                 case 'V':  load_char = UN_S_DIODE; break;
                                                 case ';':  load_char = UN_WALL;    break;
+                                                case ':':  load_char = E_WALL;     break;
                                                 case 'B':  load_char = UN_BIT;     break;
                                                 case '^':  load_char = UN_N_DIODE; break;
                                                 case '%':  load_char = UN_DELAY;   break;
