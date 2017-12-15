@@ -1543,7 +1543,6 @@ int32_t main ()
                                 system("rm load");
                                 std::cout << "Loading..." << std::endl;
                               //Load project/component from decompressed data
-                                proj_name = load;
                                 uint64_t len = load_data.length();
                                 uint32_t top_left_X = 0, top_left_Y = 0;
                               //Either: find rough project dimensions to place the project in the middle of the board OR to define paste size for component
@@ -1631,11 +1630,13 @@ int32_t main ()
                                     }
                                   //Recalculate electrification area
                                     elecReCalculate();
-                                    if (!is_load_component) {
-                                      //Move cursor
+                                  //Move cursor
+                                    if (!is_load_component && proj_name != load) {
                                         cursor_X = elec_X + MOVE_FAR*2;
                                         cursor_Y = elec_Y + MOVE_FAR;
                                     }
+                                  //Set project name
+                                    proj_name = load;
                                 }
                             }
                         }
