@@ -758,17 +758,6 @@ void elec () //Electrify the board appropriately
                     addBranch(x, y, NODIR);
                     to_unpower_delay = false;
                     break;
-                case PW_N_DIODE: //Powered North Diode
-                    if (y - 2 < board_H && (board[x][y - 1] == UN_E_DIODE || board[x][y - 1] == PW_E_DIODE || board[x][y - 1] == UN_W_DIODE || board[x][y - 1] == PW_W_DIODE) && (board[x][y - 2] == UN_N_DIODE || board[x][y - 2] == PW_N_DIODE)) { //If there's another North Diode yonder a horizontal Diode, skip to it
-                        addBranch(x, y - 2, NORTH);
-                    }
-                    break;
-                case PW_S_DIODE: //Powered South Diode
-                    if (y + 2 < board_H && (board[x][y + 1] == UN_E_DIODE || board[x][y + 1] == PW_E_DIODE || board[x][y + 1] == UN_W_DIODE || board[x][y + 1] == PW_W_DIODE) && (board[x][y + 2] == UN_S_DIODE || board[x][y + 2] == PW_S_DIODE)) { //If there's another South Diode yonder a horizontal Diode, skip to it
-                        addBranch(x, y + 2, SOUTH);
-                    }
-                    to_unpower_delay = false;
-                    break;
                 case PW_BIT: //Powered Bit
                 {
                   //Check if being reset
