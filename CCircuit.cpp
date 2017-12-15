@@ -398,8 +398,8 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
     char yd = 0;
     switch (_dir) {
         case NORTH: diode = PW_S_DIODE; wire = PW_V_WIRE; yd = -1; break; //North: Powered S Diode, V Wire
-        case EAST:  diode = PW_W_DIODE; wire = PW_H_WIRE; xd =  1; break; //East:  Powered W Diode, H Wire
-        case SOUTH: diode = PW_N_DIODE; wire = PW_V_WIRE; yd =  1; break; //South: Powered N Diode, V Wire
+        case EAST:  diode = PW_W_DIODE; wire = PW_H_WIRE; xd = 1;  break; //East:  Powered W Diode, H Wire
+        case SOUTH: diode = PW_N_DIODE; wire = PW_V_WIRE; yd = 1;  break; //South: Powered N Diode, V Wire
         case WEST:  diode = PW_E_DIODE; wire = PW_H_WIRE; xd = -1; break; //West:  Powered E Diode, H Wire
     }
   //Check for conditions
@@ -423,15 +423,15 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
     if (_is_dead) {
         --diode;
         --wire;
-        if (is_power_present) { return !is_powered; } //There's a Switch
+        if (is_power_present) { return !is_powered; }  //There's a Switch
         if (look == PW_POWER) { return false; }       //There's a Power
-        if (look == UN_WIRE                           //
-         || look == UN_BRIDGE                         //
-         || look == wire                              //
-         || look == diode                             //
-         || look == UN_BIT                            //
+        if (look == UN_WIRE                             //
+         || look == UN_BRIDGE                           //
+         || look == wire                                //
+         || look == diode                               //
+         || look == UN_BIT                              //
          || (_dir == NORTH ? look == UN_DELAY : false) //
-         || look == U1_STRETCH                        // There's a dead Wire/Bridge/D Wire/Diode/Bit/Delay/Stretcher
+         || look == U1_STRETCH                          // There's a dead Wire/Bridge/D Wire/Diode/Bit/Delay/Stretcher
            ) { return true; }
         return false; //Anything else could never power us
     }
@@ -449,7 +449,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         || (is_power_present && is_powered);    // Power
 }
 
-//Fix bounds checking
+//TODO Fix bounds checking
 uint8_t nextToLives (int32_t _X, int32_t _Y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
 {
     uint8_t lives = 0;
@@ -546,9 +546,9 @@ void elec () //Electrify the board appropriately
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
                     case NORTH: --branch[b].y; break;
-                    case EAST: ++branch[b].x; break;
+                    case EAST:  ++branch[b].x; break;
                     case SOUTH: ++branch[b].y; break;
-                    case WEST: --branch[b].x; break;
+                    case WEST:  --branch[b].x; break;
                 }
                 --b;
                 skipped = true;
@@ -666,8 +666,8 @@ void elec () //Electrify the board appropriately
             bool to_unpower_delay = true; //Unpower potential Delay below us?
             switch (board[x][y]) {
                 case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: //Unpowered Wire/V Wire/Delay/Bridge
-                   //Just here to unpower a Delay
-                   break;
+                    //Just here to unpower a Delay
+                    break;
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                 {
@@ -794,7 +794,7 @@ void elec () //Electrify the board appropriately
                 default:
                   //There's nothing here which could unpower a Delay
                     to_unpower_delay = false;
-                  //switches
+                  //Switches
                     if (board[x][y] >= 50 && board[x][y] <= 59) {
                         if (switches[board[x][y] - 50]) {
                             addBranch(x, y, NODIR);
@@ -804,7 +804,7 @@ void elec () //Electrify the board appropriately
                     break;
             }
             if (to_unpower_delay) {
-                if (board[x][y + 1] == PW_DELAY && y + 1 < board_H) { //If there's a Powered Delay beneath us, make it unpowered
+                if (board[x][y + 1] == PW_DELAY && y + 1 < board_H) { //If there's a powered Delay beneath us, make it unpowered
                     board[x][y + 1] = UN_DELAY;
                 }
             }
@@ -976,7 +976,7 @@ int32_t main ()
               << "\nzZ\t\tundo, redo"
               << "\nxbBkKjJmw\tinitiate/complete/discard selection, paste, paste unelectrified, or move, or swap, or clear area, or paste mask, or paste x flip, or paste y flip"
               << "\nq\t\tquit"
-              << "\n\nAfter initiating a selection, you can do a Save to export that component."
+              << "\n\nAfter initiating a selection, you can do a Save to export that component.\n\n\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
     while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
     std::cout << "Loading board..." << std::endl;
@@ -984,6 +984,9 @@ int32_t main ()
     std::cout << "Board loaded." << std::endl;
     prev_dir_Y = 1;
     std::cout << "Loading complete." << std::endl;
+
+
+    auto clock = std::chrono::system_clock::now();
 
     while (run) {
         display();
@@ -1684,7 +1687,8 @@ int32_t main ()
             }
         }
       //Sleep
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        clock += std::chrono::milliseconds(100);
+        std::this_thread::sleep_until(clock);
     }
     return 0;
 }
