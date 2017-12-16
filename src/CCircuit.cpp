@@ -568,7 +568,7 @@ void elec () //Electrify the board appropriately
             else if (*look == E_WALL || is_bridge) { //If we've ended up in a Bridge, or Conductive Wall, continue in the direction we were going
               //Electrify
                 if (*look == UN_BRIDGE) { *look = PW_BRIDGE; }
-                if (*look == UN_LEAKYB) { *look = PW_LEAKYB; }
+                if (*look == UN_LEAKYB) { *look = PW_LEAKYB; addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
               //Handle branch direction
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
@@ -585,6 +585,9 @@ void elec () //Electrify the board appropriately
                 if (*dir == SOUTH) { continue; } //Trying to go past the diode
                 *look = PW_N_DIODE; //Electrify
                 --branch[b].y;
+                char *here = &board[branch[b].x][branch[b].y];
+                char *yonder = &board[branch[b].x][branch[b].y - 1];
+                if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_N_DIODE || *yonder == PW_N_DIODE)) { addBranch(branch[b].x, branch[b].y - 1, NORTH); }
                 *dir = NORTH; //Reset prev_dir
                 --b;
                 skipped = true;
@@ -603,6 +606,9 @@ void elec () //Electrify the board appropriately
                 if (*dir == NORTH) { continue; } //Trying to go past the diode
                 *look = PW_S_DIODE; //Electrify
                 ++branch[b].y;
+                char *here = &board[branch[b].x][branch[b].y];
+                char *yonder = &board[branch[b].x][branch[b].y + 1];
+                if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_S_DIODE || *yonder == PW_S_DIODE)) { addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
                 *dir = SOUTH; //Reset prev_dir
                 --b;
                 skipped = true;
@@ -637,34 +643,29 @@ void elec () //Electrify the board appropriately
             char our_pos = board[branch[b].x][branch[b].y];
             bool can_V = (our_pos != UN_H_WIRE && our_pos != PW_H_WIRE);
             bool can_H = (our_pos != UN_V_WIRE && our_pos != PW_V_WIRE);
-            bool is_leaky = false;
-            if (can_V && *dir != SOUTH && branch[b].y > 0)      { //North
+            if (can_V && *dir != SOUTH && branch[b].y > 1)      { //North
                 char *look = &board[branch[b].x][branch[b].y - 1];
                 if (*look == UN_WIRE || *look == UN_N_DIODE)        { ++routes; can_north = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_north = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_north = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_north = true; *look = PW_LEAKYB; }
             }
             if (can_H && *dir != WEST && branch[b].x < board_W) { //East
                 char *look = &board[branch[b].x + 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_E_DIODE)        { ++routes; can_east = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_east = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_east = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_east = true; *look = PW_LEAKYB; is_leaky = true; }
             }
-            if (can_V && *dir != NORTH && branch[b].y < board_H) { //South
+            if (can_V && *dir != NORTH && branch[b].y < board_H - 1) { //South
                 char *look = &board[branch[b].x][branch[b].y + 1];
                 if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; can_south = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_south = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_south = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_south = true; *look = PW_LEAKYB; }
             }
             if (can_H && *dir != EAST && branch[b].x > 0)      { //West
                 char *look = &board[branch[b].x - 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_W_DIODE)        { ++routes; can_west = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_west = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_west = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_west = true; *look = PW_LEAKYB; is_leaky = true; }
             }
 
             if (routes == 0) {
@@ -748,22 +749,11 @@ void elec () //Electrify the board appropriately
                         board[x][y] = UN_XOR;
                     }
                     break;
-                case PW_LEAKYB: //Powered Leaky Bridge
+                /*case PW_LEAKYB: //Powered Leaky Bridge
                     addBranch(x, y + 1, SOUTH);
-                    break;
+                    break;*/
                 case PW_POWER: //Power
                     addBranch(x, y, NODIR);
-                    to_unpower_delay = false;
-                    break;
-                case PW_N_DIODE: //Powered North Diode
-                    if (y - 2 < board_H && (board[x][y - 1] == UN_E_DIODE || board[x][y - 1] == PW_E_DIODE || board[x][y - 1] == UN_W_DIODE || board[x][y - 1] == PW_W_DIODE) && (board[x][y - 2] == UN_N_DIODE || board[x][y - 2] == PW_N_DIODE)) { //If there's another North Diode yonder a horizontal Diode, skip to it
-                        addBranch(x, y - 2, NORTH);
-                    }
-                    break;
-                case PW_S_DIODE: //Powered South Diode
-                    if (y + 2 < board_H && (board[x][y + 1] == UN_E_DIODE || board[x][y + 1] == PW_E_DIODE || board[x][y + 1] == UN_W_DIODE || board[x][y + 1] == PW_W_DIODE) && (board[x][y + 2] == UN_S_DIODE || board[x][y + 2] == PW_S_DIODE)) { //If there's another South Diode yonder a horizontal Diode, skip to it
-                        addBranch(x, y + 2, SOUTH);
-                    }
                     to_unpower_delay = false;
                     break;
                 case PW_BIT: //Powered Bit
