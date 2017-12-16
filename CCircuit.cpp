@@ -162,7 +162,7 @@ void display ()
     buffer += std::to_string(cursor_X) + ", " + std::to_string(cursor_Y);
     buffer += " ";
     for (uint32_t i = 0; i < 10; ++i) {
-        buffer += "\033[37;40m " + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placed_switches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
+        buffer += "\033[37;40m" + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placed_switches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
         bar_off_len += 16;
     }
     buffer += "\033[37;40m";
@@ -442,7 +442,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         if (is_power_present) { return !is_powered; }  //There's a Switch
         if (look == PW_POWER) { return false; }       //There's a Power
         if (look == UN_WIRE                             //
-         || look == UN_BRIDGE || UN_LEAKYB              //
+         || look == UN_BRIDGE || look = UN_LEAKYB       //
          || look == wire                                //
          || look == diode                               //
          || look == UN_BIT                              //
