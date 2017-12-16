@@ -442,7 +442,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         if (is_power_present) { return !is_powered; }  //There's a Switch
         if (look == PW_POWER) { return false; }       //There's a Power
         if (look == UN_WIRE                             //
-         || look == UN_BRIDGE || look = UN_LEAKYB       //
+         || look == UN_BRIDGE || look == UN_LEAKYB      //
          || look == wire                                //
          || look == diode                               //
          || look == UN_BIT                              //
