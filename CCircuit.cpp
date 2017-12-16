@@ -1349,8 +1349,8 @@ int32_t main ()
                                     for (int32_t y = cursor_Y; y < paste_Y_end; ++y) {
                                         for (int32_t x = paste_X_end - 1; x >= cursor_X; --x) {
                                             board[x][y] = copy_data->at(i);
-                                            if (board[x][y] == UN_E_DIODE) { board[x][y] = UN_W_DIODE; } //E Diode to W Diode
-                                            else if (board[x][y] == UN_W_DIODE) { board[x][y] = UN_E_DIODE; } //W Diode to E Diode
+                                            if (board[x][y] == UN_E_DIODE || board[x][y] == PW_E_DIODE) { board[x][y] = UN_W_DIODE; } //E Diode to W Diode
+                                            else if (board[x][y] == UN_W_DIODE || board[x][y] == PW_W_DIODE) { board[x][y] = UN_E_DIODE; } //W Diode to E Diode
                                             ++i;
                                         }
                                     }
@@ -1358,8 +1358,8 @@ int32_t main ()
                                     for (int32_t y = paste_Y_end - 1; y >= cursor_Y; --y) {
                                         for (int32_t x = cursor_X; x < paste_X_end; ++x) {
                                             board[x][y] = copy_data->at(i);
-                                            if (board[x][y] == UN_S_DIODE) { board[x][y] = UN_N_DIODE; } //S Diode to N Diode
-                                            else if (board[x][y] == UN_N_DIODE) { board[x][y] = UN_S_DIODE; } //N Diode to S Diode
+                                            if (board[x][y] == UN_S_DIODE || board[x][y] == PW_S_DIODE) { board[x][y] = UN_N_DIODE; } //S Diode to N Diode
+                                            else if (board[x][y] == UN_N_DIODE || board[x][y] == PW_N_DIODE) { board[x][y] = UN_S_DIODE; } //N Diode to S Diode
                                             ++i;
                                         }
                                     }
