@@ -1,5 +1,6 @@
 //TODO
 //Move variables into local scope
+//Break into multiple .cpp & .hpp
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
@@ -869,7 +870,6 @@ std::string getStdoutFromCmd(std::string cmd)
     }
     return data;
 }
-
 
 std::string autoCompleteForFile (std::string input)
 {
