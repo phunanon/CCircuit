@@ -142,7 +142,9 @@ void resizeScreen ()
 #define PW_AND      31
 #define PW_NOT      32
 #define PW_XOR      33
-#define NOTHING     34
+#define UN_LEAKYB   34
+#define PW_LEAKYB   35
+#define NOTHING     36
 
 bool to_crosshairs = false;
 void display ()
@@ -230,6 +232,14 @@ void display ()
                     break;
                 case PW_BRIDGE: //Powered Bridge
                     colour += "0;30;42";
+                    buff = "+";
+                    break;
+                case UN_LEAKYB: //Leaky Bridge
+                    colour += "0;37;46";
+                    buff = "+";
+                    break;
+                case PW_LEAKYB: //Powered Leaky Bridge
+                    colour += "1;37;46";
                     buff = "+";
                     break;
                 case PW_POWER: //Power
@@ -409,11 +419,11 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         case WEST:  diode = PW_E_DIODE; wire = PW_H_WIRE; xd = -1; break; //West:  Powered E Diode, H Wire
     }
   //Check for conditions
-    if (look == PW_BRIDGE) { //Powered Bridge
+    if (look == PW_BRIDGE || look == PW_LEAKYB) { //Powered Bridge/Powered Leaky Bridge
       //Check this Powered Bridge is powered in this direction
         _X += xd;
         _Y += yd;
-        while (board[_X][_Y] == PW_BRIDGE) { //Seek along the Bridge
+        while (board[_X][_Y] == PW_BRIDGE || board[_X][_Y] == PW_LEAKYB) { //Seek along the Bridge
             _X += xd;
             _Y += yd;
         }
@@ -432,12 +442,12 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         if (is_power_present) { return !is_powered; }  //There's a Switch
         if (look == PW_POWER) { return false; }       //There's a Power
         if (look == UN_WIRE                             //
-         || look == UN_BRIDGE                           //
+         || look == UN_BRIDGE || UN_LEAKYB              //
          || look == wire                                //
          || look == diode                               //
          || look == UN_BIT                              //
          || (_dir == NORTH ? look == UN_DELAY : false) //
-         || look == U1_STRETCH                          // There's a dead Wire/Bridge/D Wire/Diode/Bit/Delay/Stretcher
+         || look == U1_STRETCH                          // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/Stretcher
            ) { return true; }
         return false; //Anything else could never power us
     }
@@ -520,6 +530,7 @@ void elec () //Electrify the board appropriately
             else if (*look == PW_H_WIRE)  { *look = UN_H_WIRE;  } //Powered H Wire to H Wire
             else if (*look == PW_V_WIRE)  { *look = UN_V_WIRE;  } //Powered V Wire to V Wire
             else if (*look == PW_BRIDGE)  { *look = UN_BRIDGE;  } //Powered Bridge to Bridge
+            else if (*look == PW_LEAKYB)  { *look = UN_LEAKYB;  } //Powered Leaky Bridge to Leaky Bridge
             else if (*look == PW_N_DIODE) { *look = UN_N_DIODE; } //Powered N Diode to N Diode
             else if (*look == PW_E_DIODE) { *look = UN_E_DIODE; } //Powered E Diode to E Diode
             else if (*look == PW_S_DIODE) { *look = UN_S_DIODE; } //Powered S Diode to S Diode
@@ -548,14 +559,15 @@ void elec () //Electrify the board appropriately
             char *look = &board[branch[b].x][branch[b].y];
             if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_WALL || *look == PW_BIT || *look == PW_DELAY) { continue; }
             uint8_t *dir = &branch[b].d;
-            bool is_bridge = (*look == UN_BRIDGE || *look == PW_BRIDGE);
+            bool is_bridge = (*look == UN_BRIDGE || *look == PW_BRIDGE || *look == UN_LEAKYB || *look == PW_LEAKYB);
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
             else if (*look == UN_WIRE)   { *look = PW_WIRE; }    //Electrify Wire
             else if (*look == UN_H_WIRE) { *look = PW_H_WIRE; }  //Electrify H Wire
             else if (*look == UN_V_WIRE) { *look = PW_V_WIRE; }  //Electrify V Wire
             else if (*look == E_WALL || is_bridge) { //If we've ended up in a Bridge, or Conductive Wall, continue in the direction we were going
               //Electrify
-                if (is_bridge) { *look = PW_BRIDGE; }
+                if (*look == UN_BRIDGE) { *look = PW_BRIDGE; }
+                if (*look == UN_LEAKYB) { *look = PW_LEAKYB; }
               //Handle branch direction
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
@@ -624,29 +636,34 @@ void elec () //Electrify the board appropriately
             char our_pos = board[branch[b].x][branch[b].y];
             bool can_V = (our_pos != UN_H_WIRE && our_pos != PW_H_WIRE);
             bool can_H = (our_pos != UN_V_WIRE && our_pos != PW_V_WIRE);
+            bool is_leaky = false;
             if (can_V && *dir != SOUTH && branch[b].y > 0)      { //North
                 char *look = &board[branch[b].x][branch[b].y - 1];
-                if (*look == UN_WIRE || *look == UN_N_DIODE)               { ++routes; can_north = true; }
+                if (*look == UN_WIRE || *look == UN_N_DIODE)        { ++routes; can_north = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_north = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_north = true; *look = PW_BRIDGE; }
+                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_north = true; *look = PW_LEAKYB; }
             }
             if (can_H && *dir != WEST && branch[b].x < board_W) { //East
                 char *look = &board[branch[b].x + 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_E_DIODE)               { ++routes; can_east = true; }
+                if (*look == UN_WIRE || *look == UN_E_DIODE)        { ++routes; can_east = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_east = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_east = true; *look = PW_BRIDGE; }
+                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_east = true; *look = PW_LEAKYB; is_leaky = true; }
             }
             if (can_V && *dir != NORTH && branch[b].y < board_H) { //South
                 char *look = &board[branch[b].x][branch[b].y + 1];
                 if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; can_south = true; }
                 else if (*look == UN_V_WIRE)                       { ++routes; can_south = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_south = true; *look = PW_BRIDGE; }
+                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_south = true; *look = PW_LEAKYB; }
             }
             if (can_H && *dir != EAST && branch[b].x > 0)      { //West
                 char *look = &board[branch[b].x - 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_W_DIODE)               { ++routes; can_west = true; }
+                if (*look == UN_WIRE || *look == UN_W_DIODE)        { ++routes; can_west = true; }
                 else if (*look == UN_H_WIRE)                       { ++routes; can_west = true; }
                 else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_west = true; *look = PW_BRIDGE; }
+                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_double_west = true; *look = PW_LEAKYB; is_leaky = true; }
             }
 
             if (routes == 0) {
@@ -677,7 +694,7 @@ void elec () //Electrify the board appropriately
         for (int32_t y = elec_Y2; y >= elec_Y; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
             bool to_unpower_delay = true; //Unpower potential Delay below us?
             switch (board[x][y]) {
-                case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: //Unpowered Wire/V Wire/Delay/Bridge
+                case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: case UN_LEAKYB: //Wire/V Wire/Delay/Bridge/LeakyB
                     //Just here to unpower a Delay
                     break;
                 case UN_AND: //AND
@@ -729,6 +746,9 @@ void elec () //Electrify the board appropriately
                     } else {
                         board[x][y] = UN_XOR;
                     }
+                    break;
+                case PW_LEAKYB: //Powered Leaky Bridge
+                    addBranch(x, y + 1, SOUTH);
                     break;
                 case PW_POWER: //Power
                     addBranch(x, y, NODIR);
@@ -977,7 +997,8 @@ int32_t main ()
               << "\nL\t\tfar lay under cursor"
               << "\nfF\t\tcrosshairs, go-to coord"
               << "\n0-9\t\tplace/toggle switch"
-              << "\ngcGCrl\t\tNorth/South/West/East diodes, bridge, power"
+              << "\ngcGC\t\tNorth/South/West/East diodes"
+              << "\nrRl\t\tbridge, leaky bridge, power"
               << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
               << "\nb\t\tplace bit"
               << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
@@ -1086,7 +1107,7 @@ int32_t main ()
                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE
+                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
                                           )
                            ) { //Auto-bridging
                             *look = UN_BRIDGE;
@@ -1134,6 +1155,11 @@ int32_t main ()
                         to_move = true;
                         break;
 
+                    case 'R': //Leaky Bridge
+                        *look = UN_LEAKYB;
+                        to_move = true;
+                        break;
+
                     case 'l': //Power
                         *look = PW_POWER;
                         to_move = true;
@@ -1162,7 +1188,7 @@ int32_t main ()
                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE
+                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
                                           )
                            ) { //Auto-bridging
                             *look = UN_BRIDGE;
@@ -1178,7 +1204,7 @@ int32_t main ()
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE
+                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
                                           )
                            ) { //Auto-bridging
                             *look = UN_BRIDGE;
@@ -1194,7 +1220,7 @@ int32_t main ()
                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE
+                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
                                           )
                            ) { //Auto-bridging
                             *look = UN_BRIDGE;
@@ -1210,7 +1236,7 @@ int32_t main ()
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE
+                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
                                           )
                            ) { //Auto-bridging
                             *look = UN_BRIDGE;
@@ -1344,7 +1370,7 @@ int32_t main ()
                                                 uint8_t c = copy_data->at(i);
                                                 switch (c) {
                                                     case P3_STRETCH: case P2_STRETCH: case P1_STRETCH: c = U1_STRETCH; break;
-                                                    case PW_WIRE: case PW_BRIDGE: case PW_BIT: case PW_N_DIODE: case PW_DELAY: case PW_E_DIODE: case PW_S_DIODE: case PW_W_DIODE: case PW_H_WIRE: case PW_V_WIRE:
+                                                    case PW_WIRE: case PW_BRIDGE: case PW_LEAKYB: case PW_BIT: case PW_N_DIODE: case PW_DELAY: case PW_E_DIODE: case PW_S_DIODE: case PW_W_DIODE: case PW_H_WIRE: case PW_V_WIRE:
                                                         --c;
                                                         break;
                                                 }
@@ -1448,6 +1474,7 @@ int32_t main ()
                                             case UN_NOT: case PW_NOT:            save_data += 'N'; break;
                                             case UN_XOR: case PW_XOR:            save_data += 'X'; break;
                                             case UN_BRIDGE: case PW_BRIDGE:      save_data += '+'; break;
+                                            case UN_LEAKYB: case PW_LEAKYB:      save_data += '~'; break;
                                             case PW_POWER:                       save_data += '@'; break;
                                             case UN_WALL:                        save_data += ';'; break;
                                             case E_WALL:                         save_data += ':'; break;
@@ -1551,7 +1578,7 @@ int32_t main ()
                                             x = top_left_X;
                                         } else {
                                             load_char = EMPTY;
-                                            switch ((uint8_t)load_data[i])
+                                            switch (load_data[i])
                                             {
                                                 case ' ': break; //Empty
                                                 case '#': load_char = UN_WIRE;    break;
@@ -1559,6 +1586,7 @@ int32_t main ()
                                                 case 'N': load_char = UN_NOT;     break;
                                                 case 'X': load_char = UN_XOR;     break;
                                                 case '+': load_char = UN_BRIDGE;  break;
+                                                case '~': load_char = UN_LEAKYB;  break;
                                                 case '@': load_char = PW_POWER;   break;
                                                 case 'V': load_char = UN_S_DIODE; break;
                                                 case ';': load_char = UN_WALL;    break;
