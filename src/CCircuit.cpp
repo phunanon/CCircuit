@@ -5,7 +5,6 @@
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
 //Give clearer save success
-//Don't overwrite prev project save name on component save
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -1617,9 +1616,9 @@ int32_t main ()
                                     if (!is_load_component && proj_name != load) {
                                         cursor_X = elec_X + MOVE_FAR*2;
                                         cursor_Y = elec_Y + MOVE_FAR;
+                                      //Set project name
+                                        proj_name = load;
                                     }
-                                  //Set project name
-                                    proj_name = load;
                                 }
                             }
                         }
