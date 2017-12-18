@@ -546,18 +546,14 @@ void elec () //Electrify the board appropriately
     }
   //Wires & inline components
     bool moved = true;
-    bool skipped = false;
     while (moved) {
     
         moved = false;
-        uint32_t prev_branch = 0;
         
         for (uint32_t b = 0; b < branches; ++b) {
             bool can_north = false, can_east = false, can_south = false, can_west = false, can_double_north = false, can_double_east = false, can_double_south = false, can_double_west = false;
             uint8_t routes = 0;
             
-            if (b != prev_branch) { skipped = false; }
-            prev_branch = b;
             char *look = &board[branch[b].x][branch[b].y];
             if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_WALL || *look == PW_BIT || *look == PW_DELAY) { continue; }
             uint8_t *dir = &branch[b].d;
@@ -579,7 +575,6 @@ void elec () //Electrify the board appropriately
                     case SOUTH: ++branch[b].y; break;
                     case WEST:  --branch[b].x; break;
                 }
-                skipped = true;
                 --b;
                 continue;
             }
@@ -593,7 +588,6 @@ void elec () //Electrify the board appropriately
                 if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_N_DIODE || *yonder == PW_N_DIODE)) { addBranch(branch[b].x, branch[b].y - 1, NORTH); }
                 *dir = NORTH; //Reset prev_dir
                 --b;
-                skipped = true;
                 continue;
             }
             else if (*look == UN_E_DIODE ||*look == PW_E_DIODE) { //Upon an E Diode, go East
@@ -602,7 +596,6 @@ void elec () //Electrify the board appropriately
                 ++branch[b].x;
                 *dir = EAST; //Reset prev_dir
                 --b;
-                skipped = true;
                 continue;
             }
             else if (*look == UN_S_DIODE || *look == PW_S_DIODE) { //Upon an S Diode, go South
@@ -615,7 +608,6 @@ void elec () //Electrify the board appropriately
                 if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_S_DIODE || *yonder == PW_S_DIODE)) { addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
                 *dir = SOUTH; //Reset prev_dir
                 --b;
-                skipped = true;
                 continue;
             }
             else if (*look == UN_W_DIODE || *look == PW_W_DIODE) { //Upon a W Diode, go West
@@ -624,15 +616,10 @@ void elec () //Electrify the board appropriately
                 --branch[b].x;
                 *dir = WEST; //Reset prev_dir
                 --b;
-                skipped = true;
                 continue;
             }
             else if (*look == UN_BIT) { //If we've ended up in a Bit, activate it
                 *look = PW_BIT;
-                continue;
-            }
-            else if (*look == UN_DELAY) { //If we've ended up in a Delay, activate it (if we didn't skip earlier (just been over a Bridge/Diode))
-                if (!skipped) { *look = PW_DELAY; }
                 continue;
             }
             else if (*look >= U1_STRETCH && *look <= P3_STRETCH) { //Upon a Stretcher, go South
@@ -640,7 +627,6 @@ void elec () //Electrify the board appropriately
                 ++branch[b].y;
                 *dir = SOUTH; //Reset prev_dir
                 --b;
-                skipped = true;
                 continue;
             }
           //Wires (electric branches)
@@ -688,10 +674,10 @@ void elec () //Electrify the board appropriately
                     else if (can_south)       { ++branch[next_branch].y;       branch[next_branch].d = SOUTH;    can_south = false;       }
                     else if (can_west)        { --branch[next_branch].x;       branch[next_branch].d = WEST;     can_west = false;        }
                   //Step over bridge
-                    else if (can_double_north) { branch[next_branch].y -= 2;    branch[next_branch].d = NORTH;    can_double_north = false; skipped = true; }
-                    else if (can_double_east)  { branch[next_branch].x += 2;    branch[next_branch].d = EAST;     can_double_east = false;  skipped = true; }
-                    else if (can_double_south) { branch[next_branch].y += 2;    branch[next_branch].d = SOUTH;    can_double_south = false; skipped = true; }
-                    else if (can_double_west)  { branch[next_branch].x -= 2;    branch[next_branch].d = WEST;     can_double_west = false;  skipped = true; }
+                    else if (can_double_north) { branch[next_branch].y -= 2;    branch[next_branch].d = NORTH;    can_double_north = false; }
+                    else if (can_double_east)  { branch[next_branch].x += 2;    branch[next_branch].d = EAST;     can_double_east = false; }
+                    else if (can_double_south) { branch[next_branch].y += 2;    branch[next_branch].d = SOUTH;    can_double_south = false; }
+                    else if (can_double_west)  { branch[next_branch].x -= 2;    branch[next_branch].d = WEST;     can_double_west = false; }
                     --routes;
                 } while (routes > 0);
             }
