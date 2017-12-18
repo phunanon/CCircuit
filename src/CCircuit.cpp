@@ -5,6 +5,7 @@
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
 //Give clearer save success
+//Don't overwrite prev project save name on component save
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -638,36 +639,40 @@ void elec () //Electrify the board appropriately
                 continue;
             }
           //Wires (electric branches)
+            auto isUnDiode  = [](char look) { return look == UN_N_DIODE || look == UN_E_DIODE || look == UN_S_DIODE || look == UN_W_DIODE; };
+            auto isPwDWire  = [](char look) { return look == PW_V_WIRE || look == PW_H_WIRE; };
+            auto isXBridge = [](char look) { return look == UN_BRIDGE || look == PW_BRIDGE; };
+            auto isXLeakyB = [](char look) { return look == UN_LEAKYB || look == PW_LEAKYB; };
             char our_pos = board[branch[b].x][branch[b].y];
             bool can_V = (our_pos != UN_H_WIRE && our_pos != PW_H_WIRE);
             bool can_H = (our_pos != UN_V_WIRE && our_pos != PW_V_WIRE);
-            if (can_V && *dir != SOUTH && branch[b].y > 1)      { //North
+            if (can_V && *dir != SOUTH && branch[b].y > 1)              { //North
                 char *look = &board[branch[b].x][branch[b].y - 1];
-                if (*look == UN_WIRE || *look == UN_N_DIODE)        { ++routes; can_north = true; }
-                else if (*look == UN_V_WIRE)                       { ++routes; can_north = true; }
-                else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_north = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_north = true; *look = PW_LEAKYB; }
+                if (*look == UN_WIRE || *look == UN_N_DIODE)    { ++routes; can_north = true; }
+                else if (*look == UN_V_WIRE)                    { ++routes; can_north = true; }
+                else if (isXBridge(*look))                      { ++routes; can_double_north = true; *look = PW_BRIDGE; }
+                else if (isXLeakyB(*look))                      { ++routes; can_north = true; *look = PW_LEAKYB; }
             }
-            if (can_H && *dir != WEST && branch[b].x < board_W) { //East
+            if (can_H && *dir != WEST && branch[b].x < board_W)         { //East
                 char *look = &board[branch[b].x + 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_E_DIODE)        { ++routes; can_east = true; }
-                else if (*look == UN_H_WIRE)                       { ++routes; can_east = true; }
-                else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_east = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_east = true; *look = PW_LEAKYB; }
+                if (*look == UN_WIRE || *look == UN_E_DIODE)    { ++routes; can_east = true; }
+                else if (*look == UN_H_WIRE)                    { ++routes; can_east = true; }
+                else if (isXBridge(*look))                      { ++routes; can_double_east = true; *look = PW_BRIDGE; }
+                else if (isXLeakyB(*look))                      { ++routes; can_east = true; *look = PW_LEAKYB; }
             }
-            if (can_V && *dir != NORTH && branch[b].y < board_H - 1) { //South
+            if (can_V && *dir != NORTH && branch[b].y < board_H - 1)    { //South
                 char *look = &board[branch[b].x][branch[b].y + 1];
                 if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; can_south = true; }
-                else if (*look == UN_V_WIRE)                       { ++routes; can_south = true; }
-                else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_south = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_south = true; *look = PW_LEAKYB; }
+                else if (*look == UN_V_WIRE)                    { ++routes; can_south = true; }
+                else if (isXBridge(*look))                      { ++routes; can_double_south = true; *look = PW_BRIDGE; }
+                else if (isXLeakyB(*look))                      { ++routes; can_south = true; *look = PW_LEAKYB; }
             }
-            if (can_H && *dir != EAST && branch[b].x > 0)      { //West
+            if (can_H && *dir != EAST && branch[b].x > 0)               { //West
                 char *look = &board[branch[b].x - 1][branch[b].y];
-                if (*look == UN_WIRE || *look == UN_W_DIODE)        { ++routes; can_west = true; }
-                else if (*look == UN_H_WIRE)                       { ++routes; can_west = true; }
-                else if (*look == UN_BRIDGE || *look == PW_BRIDGE) { ++routes; can_double_west = true; *look = PW_BRIDGE; }
-                else if (*look == UN_LEAKYB || *look == PW_LEAKYB) { ++routes; can_west = true; *look = PW_LEAKYB; }
+                if (*look == UN_WIRE || *look == UN_W_DIODE)    { ++routes; can_west = true; }
+                else if (*look == UN_H_WIRE)                    { ++routes; can_west = true; }
+                else if (isXBridge(*look))                      { ++routes; can_double_west = true; *look = PW_BRIDGE; }
+                else if (isXLeakyB(*look))                      { ++routes; can_west = true; *look = PW_LEAKYB; }
             }
 
             if (routes == 0) {
