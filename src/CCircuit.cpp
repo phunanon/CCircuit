@@ -570,7 +570,7 @@ void elec () //Electrify the board appropriately
               //Electrify & leak
                 if (*look == UN_BRIDGE) { *look = PW_BRIDGE; }
                 if (*look == UN_LEAKYB) { *look = PW_LEAKYB; }
-                if (*look == PW_LEAKYB) { addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
+                if (*look == PW_LEAKYB && *dir != SOUTH && *dir != NORTH) { addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
               //Handle branch direction
                 switch (*dir) {
                     case NODIR: continue; //We never had a direction (Bridge may have been placed on top of Power)
