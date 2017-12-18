@@ -431,6 +431,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         }
         //Reached the end of the bridges
     }
+    if (board[_X][_Y+1] == PW_LEAKYB && _dir == NORTH) { return !_is_dead; }
     look = board[_X][_Y];
     bool is_power_present = false, is_powered = false;
     if (look >= 50 && look <= 59) {
