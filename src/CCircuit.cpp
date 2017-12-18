@@ -448,23 +448,30 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
          || look == UN_BRIDGE || look == UN_LEAKYB      //
          || look == wire                                //
          || look == diode                               //
-         || look == UN_BIT                              //
-         || (_dir == NORTH ? look == UN_DELAY : false) //
-         || look == U1_STRETCH                          // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/Stretcher
+         || (_dir == NORTH &&
+                           (  look == UN_BIT
+                           || look == UN_DELAY
+                           || look == UN_AND
+                           || look == UN_XOR
+                           || look == UN_NOT
+                           || look == U1_STRETCH))      // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher
            ) { return true; }
         return false; //Anything else could never power us
     }
   //Return for if checking for alive
     return look == PW_WIRE                      //
         || look == wire                         //
-        || look == PW_BIT                       //
         || look == PW_POWER                     //
-        || look == diode                        // Powered by Wire/D Wire/Bit/Power/Diode
-        || (_dir == NORTH ? look == PW_DELAY    //
-                        || look == P1_STRETCH   //
-                        || look == P2_STRETCH   //
-                        || look == P3_STRETCH   //
-           : false)                             // Powered by Delay/Stretcher
+        || look == diode                        // Powered by Wire/D Wire/Power/Diode
+        || (_dir == NORTH &&
+                          (  look == PW_DELAY
+                          || look == PW_BIT
+                          || look == PW_AND
+                          || look == PW_XOR
+                          || look == PW_NOT
+                          || look == P1_STRETCH
+                          || look == P2_STRETCH
+                          || look == P3_STRETCH))   // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher
         || (is_power_present && is_powered);    // Power
 }
 
