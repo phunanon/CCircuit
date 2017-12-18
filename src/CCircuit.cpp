@@ -4,6 +4,7 @@
 //Don't allow movement out of bounds when pasting
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
+//Give clearer save success
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -510,7 +511,7 @@ struct Branch
     uint8_t d;
 };
 
-Branch branch[4096];
+Branch branch[8192];
 uint32_t branches = 0;
 int32_t addBranch (int32_t _X, int32_t _Y, uint8_t prev_dir)
 {
@@ -586,6 +587,7 @@ void elec () //Electrify the board appropriately
                 if (*dir == SOUTH) { continue; } //Trying to go past the diode
                 *look = PW_N_DIODE; //Electrify
                 --branch[b].y;
+              //Check if there is a North diode yonder we can skip to
                 char *here = &board[branch[b].x][branch[b].y];
                 char *yonder = &board[branch[b].x][branch[b].y - 1];
                 if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_N_DIODE || *yonder == PW_N_DIODE)) { addBranch(branch[b].x, branch[b].y - 1, NORTH); }
@@ -607,6 +609,7 @@ void elec () //Electrify the board appropriately
                 if (*dir == NORTH) { continue; } //Trying to go past the diode
                 *look = PW_S_DIODE; //Electrify
                 ++branch[b].y;
+              //Check if there is a South diode yonder we can skip to
                 char *here = &board[branch[b].x][branch[b].y];
                 char *yonder = &board[branch[b].x][branch[b].y + 1];
                 if ((*here == UN_E_DIODE || *here == PW_E_DIODE || *here == UN_W_DIODE || *here == PW_W_DIODE) && (*yonder == UN_S_DIODE || *yonder == PW_S_DIODE)) { addBranch(branch[b].x, branch[b].y + 1, SOUTH); }
