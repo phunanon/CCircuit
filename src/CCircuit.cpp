@@ -453,7 +453,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
                            || look == UN_DELAY
                            || look == UN_AND
                            || look == UN_XOR
-                           || look == UN_NOT
+                           || look == PW_NOT
                            || look == U1_STRETCH))      // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher
            ) { return true; }
         return false; //Anything else could never power us
@@ -468,7 +468,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
                           || look == PW_BIT
                           || look == PW_AND
                           || look == PW_XOR
-                          || look == PW_NOT
+                          || look == UN_NOT
                           || look == P1_STRETCH
                           || look == P2_STRETCH
                           || look == P3_STRETCH))   // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher
