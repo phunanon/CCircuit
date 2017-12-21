@@ -174,7 +174,7 @@ void display ()
     }
     buffer += "\033[37;40m";
     bar_off_len += 8;
-    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "direct" : "genperp") + " wire" : ""); 
+    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "direct" : "genpurp") + " wire" : ""); 
     buffer += (is_copying ? "  selecting (x complete)" : (is_data_to_paste ?
         (is_no_copy_source ?
             "  ready (x dismiss, b paste, B unelec, m x-flip, w y-flip, J mask)" : "  ready (x dismiss, b paste, B unelec, k cut, K swap, j clear, m x-flip, w y-flip, J mask, Y save)")
