@@ -1164,7 +1164,7 @@ int32_t main ()
 
                     case 'L': //Far lay
                         for (uint8_t i = 0; i < MOVE_FAR && ((cursor_X += prev_dir_X) | (cursor_Y += prev_dir_Y)); ++i) {
-                            board[cursor_X][cursor_Y] = *look;
+                            if (board[cursor_X][cursor_Y] == EMPTY) { board[cursor_X][cursor_Y] = *look; } else { break; }
                         }
                         to_recalc = true;
                         break;
