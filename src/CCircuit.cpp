@@ -456,6 +456,7 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
          || (_dir == NORTH &&
                            (  look == UN_BIT
                            || look == UN_DELAY
+                           || look == PW_DELAY
                            || look == UN_AND
                            || look == UN_XOR
                            || look == PW_NOT
@@ -564,11 +565,9 @@ void elec () //Electrify the board appropriately
         moved = false;
         
         for (uint32_t b = 0; b < branches; ++b) {
-            bool can_north = false, can_east = false, can_south = false, can_west = false, can_double_north = false, can_double_east = false, can_double_south = false, can_double_west = false;
-            uint8_t routes = 0;
             
             char *look = &board[branch[b].x][branch[b].y];
-            if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_WALL || *look == PW_BIT || *look == PW_DELAY) { continue; }
+            if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_DELAY || *look == PW_DELAY || *look == UN_WALL || *look == PW_BIT) { continue; }
             uint8_t *dir = &branch[b].d;
             bool is_bridge = (*look == UN_BRIDGE || *look == PW_BRIDGE || *look == UN_LEAKYB || *look == PW_LEAKYB);
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
@@ -642,7 +641,10 @@ void elec () //Electrify the board appropriately
                 --b;
                 continue;
             }
+
           //Wires (electric branches)
+            bool can_north = false, can_east = false, can_south = false, can_west = false, can_double_north = false, can_double_east = false, can_double_south = false, can_double_west = false;
+            uint8_t routes = 0;
             auto isUnDiode  = [](char look) { return look == UN_N_DIODE || look == UN_E_DIODE || look == UN_S_DIODE || look == UN_W_DIODE; };
             auto isPwDWire  = [](char look) { return look == PW_V_WIRE || look == PW_H_WIRE; };
             auto isXBridge = [](char look) { return look == UN_BRIDGE || look == PW_BRIDGE; };
@@ -650,28 +652,32 @@ void elec () //Electrify the board appropriately
             char our_pos = board[branch[b].x][branch[b].y];
             bool can_V = (our_pos != UN_H_WIRE && our_pos != PW_H_WIRE);
             bool can_H = (our_pos != UN_V_WIRE && our_pos != PW_V_WIRE);
-            if (can_V && *dir != SOUTH && branch[b].y > 1)              { //North
+          //North
+            if (can_V && *dir != SOUTH && branch[b].y > 1)              {
                 char *look = &board[branch[b].x][branch[b].y - 1];
                 if (*look == UN_WIRE || *look == UN_N_DIODE)    { ++routes; can_north = true; }
                 else if (*look == UN_V_WIRE)                    { ++routes; can_north = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_north = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_north = true; *look = PW_LEAKYB; }
             }
-            if (can_H && *dir != WEST && branch[b].x < board_W)         { //East
+          //East
+            if (can_H && *dir != WEST && branch[b].x < board_W)         {
                 char *look = &board[branch[b].x + 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_E_DIODE)    { ++routes; can_east = true; }
                 else if (*look == UN_H_WIRE)                    { ++routes; can_east = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_east = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_east = true; *look = PW_LEAKYB; }
             }
-            if (can_V && *dir != NORTH && branch[b].y < board_H - 1)    { //South
+          //South
+            if (can_V && *dir != NORTH && branch[b].y < board_H - 1)    {
                 char *look = &board[branch[b].x][branch[b].y + 1];
                 if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; can_south = true; }
                 else if (*look == UN_V_WIRE)                    { ++routes; can_south = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_south = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_south = true; *look = PW_LEAKYB; }
             }
-            if (can_H && *dir != EAST && branch[b].x > 0)               { //West
+          //West
+            if (can_H && *dir != EAST && branch[b].x > 0)               {
                 char *look = &board[branch[b].x - 1][branch[b].y];
                 if (*look == UN_WIRE || *look == UN_W_DIODE)    { ++routes; can_west = true; }
                 else if (*look == UN_H_WIRE)                    { ++routes; can_west = true; }
@@ -705,11 +711,7 @@ void elec () //Electrify the board appropriately
   //Components
     for (int32_t x = elec_X; x <= elec_X2; ++x) {
         for (int32_t y = elec_Y2; y >= elec_Y; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
-            bool to_unpower_delay = true; //Unpower potential Delay below us?
             switch (board[x][y]) {
-                case UN_WIRE: case UN_V_WIRE: case UN_BRIDGE: case UN_LEAKYB: //Wire/V Wire/Delay/Bridge/LeakyB
-                    //Just here to unpower a Delay
-                    break;
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                 {
@@ -735,7 +737,6 @@ void elec () //Electrify the board appropriately
                         if (powerAtDir(x, y - 1, NORTH) || (!powerAtDir(x, y - 1, NORTH, true) && is_left_alive && is_right_alive)) { //Are we powered from above; or is there nothing dead above us, and we have both flanks available?
                             board[x][y] = PW_AND;
                             addBranch(x, y + 1, SOUTH);
-                            to_unpower_delay = false;
                         }
                     }
                     break;
@@ -745,7 +746,6 @@ void elec () //Electrify the board appropriately
                     if (!nextToLives(x, y, 2)) {
                         board[x][y] = UN_NOT;
                         addBranch(x, y + 1, SOUTH);
-                        to_unpower_delay = false;
                     } else {
                         board[x][y] = PW_NOT;
                     }
@@ -755,14 +755,21 @@ void elec () //Electrify the board appropriately
                     if (nextToLives(x, y, 3) == 1) {
                         board[x][y] = PW_XOR;
                         addBranch(x, y + 1, SOUTH);
-                        to_unpower_delay = false;
                     } else {
                         board[x][y] = UN_XOR;
                     }
                     break;
+                case UN_DELAY: //Delay
+                case PW_DELAY: //Powered Delay
+                    if (nextToLives(x, y, 1)) {
+                        board[x][y] = PW_DELAY;
+                        addBranch(x, y + 1, SOUTH);
+                    } else {
+                        board[x][y] = UN_DELAY;
+                    }
+                    break;
                 case PW_POWER: //Power
                     addBranch(x, y, NODIR);
-                    to_unpower_delay = false;
                     break;
                 case PW_BIT: //Powered Bit
                 {
@@ -785,31 +792,11 @@ void elec () //Electrify the board appropriately
                         } else {
                             if (board[x][y] == PW_BIT) { //If already set
                                 addBranch(x, y + 1, SOUTH);
-                                to_unpower_delay = false;
                             }
                         }
                     }
                     break;
                 }
-                case UN_DELAY: //Delay
-                  //Check if we should be powered
-                    if (powerAtDir(x, y - 1, NORTH)) {
-                        board[x][y] = PW_DELAY;
-                        if (board[x][y + 1] != UN_DELAY && y < board_H) {
-                            addBranch(x, y + 1, SOUTH);
-                        }
-                        to_unpower_delay = false;
-                    }
-                    break;
-                case PW_DELAY: //Powered Delay
-                  //Check if we should be unpowered
-                    if (powerAtDir(x, y - 1, NORTH, true)) {
-                        board[x][y] = UN_DELAY;
-                    } else {
-                        addBranch(x, y + 1, SOUTH);
-                    }
-                    to_unpower_delay = false;
-                    break;
                 case P1_STRETCH: //
                 case P2_STRETCH: //
                 case P3_STRETCH: // Powered Stretcher
@@ -819,25 +806,16 @@ void elec () //Electrify the board appropriately
                     }
                     if (board[x][y] > P1_STRETCH) {
                         addBranch(x, y + 1, SOUTH);
-                        to_unpower_delay = false;
                     }
                     break;
                 default:
-                  //There's nothing here which could unpower a Delay
-                    to_unpower_delay = false;
                   //Switches
                     if (board[x][y] >= 50 && board[x][y] <= 59) {
                         if (switches[board[x][y] - 50]) {
                             addBranch(x, y, NODIR);
-                            to_unpower_delay = false;
                         }
                     }
                     break;
-            }
-            if (to_unpower_delay) {
-                if (board[x][y + 1] == PW_DELAY && y + 1 < board_H) { //If there's a powered Delay beneath us, make it unpowered
-                    board[x][y + 1] = UN_DELAY;
-                }
             }
         }
     }
