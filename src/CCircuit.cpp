@@ -5,6 +5,10 @@
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
 //Give clearer save success
+//Tool to create blank board
+//Fix stretcher powered by diode from flank
+//Fix delay in some key presses
+//Implement autosave & onexitsave
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -237,11 +241,11 @@ void display ()
                     buff = "+";
                     break;
                 case UN_LEAKYB: //Leaky Bridge
-                    colour += "0;37;46";
+                    colour += "4;30;47";
                     buff = "+";
                     break;
                 case PW_LEAKYB: //Powered Leaky Bridge
-                    colour += "1;37;46";
+                    colour += "4;30;42";
                     buff = "+";
                     break;
                 case PW_POWER: //Power
