@@ -194,22 +194,22 @@ void display ()
         for (int32_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
             buff = " ";
             char *look = &board[x][y];
-            std::string colour = "\033[";
+            std::string colour = "\033[0;";
             switch (*look) {
                 case EMPTY: //Empty
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = (x >= elec_X && x < elec_X2 + 1 && y >= elec_Y && y < elec_Y2 + 1 ? " " : ".");
                     break;
                 case UN_WIRE: //Unpowered Wire
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "#";
                     break;
                 case PW_WIRE: //Powered Wire
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "#";
                     break;
                 case UN_AND: //AND
-                    colour += "0;37;43";
+                    colour += "37;43";
                     buff = "A";
                     break;
                 case PW_AND: //Powered AND
@@ -217,7 +217,7 @@ void display ()
                     buff = "A";
                     break;
                 case UN_NOT: //NOT
-                    colour += "0;37;41";
+                    colour += "37;41";
                     buff = "N";
                     break;
                 case PW_NOT: //Powered NOT
@@ -225,7 +225,7 @@ void display ()
                     buff = "N";
                     break;
                 case UN_XOR: //XOR
-                    colour += "0;37;45";
+                    colour += "37;45";
                     buff = "X";
                     break;
                 case PW_XOR: //Powered XOR
@@ -233,11 +233,11 @@ void display ()
                     buff = "X";
                     break;
                 case UN_BRIDGE: //Bridge
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "+";
                     break;
                 case PW_BRIDGE: //Powered Bridge
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "+";
                     break;
                 case UN_LEAKYB: //Leaky Bridge
@@ -269,35 +269,35 @@ void display ()
                     buff = "B";
                     break;
                 case UN_N_DIODE: //North Diode
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "^";
                     break;
                 case PW_N_DIODE: //Powered North Diode
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "^";
                     break;
                 case UN_E_DIODE: //East Diode
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = ">";
                     break;
                 case PW_E_DIODE: //Powered East Diode
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = ">";
                     break;
                 case UN_S_DIODE: //South Diode
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "V";
                     break;
                 case PW_S_DIODE: //Powered South Diode
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "V";
                     break;
                 case UN_W_DIODE: //West Diode
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "<";
                     break;
                 case PW_W_DIODE: //Powered West Diode
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "<";
                     break;
                 case UN_DELAY: //Delay
@@ -319,19 +319,19 @@ void display ()
                     buff = "$"; //Powered Stretcher
                     break;
                 case UN_H_WIRE:
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "-"; //Horizontal Wire
                     break;
                 case PW_H_WIRE:
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "-"; //Powered Horizontal Wire
                     break;
                 case UN_V_WIRE:
-                    colour += "0;30;47";
+                    colour += "30;47";
                     buff = "|"; //Vertical Wire
                     break;
                 case PW_V_WIRE:
-                    colour += "0;30;42";
+                    colour += "30;42";
                     buff = "|"; //Powered Vertical Wire
                     break;
             }
