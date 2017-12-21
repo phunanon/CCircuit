@@ -9,6 +9,7 @@
 //Fix stretcher powered by diode from flank
 //Fix delay in some key presses
 //Implement autosave & onexitsave
+//Implement smart far copy (jump to end of circuit)
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
