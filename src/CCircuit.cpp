@@ -33,8 +33,8 @@ const uint16_t elec_W = board_W - 2;
 const uint16_t elec_H = board_H - 2;
 char board[board_W][board_H];
 const uint8_t MOVE_FAR = 8;
-int16_t cursor_X = MOVE_FAR*2;
-int16_t cursor_Y = MOVE_FAR;
+uint16_t cursor_X = MOVE_FAR*2;
+uint16_t cursor_Y = MOVE_FAR;
 bool to_elec_cursor = false;
 bool to_copy_cursor = false;
 
@@ -42,7 +42,7 @@ uint8_t switches[10];
 bool placed_switches[10];
 uint8_t switch_num;
 
-int16_t elec_X = board_W, elec_Y = board_H, elec_X2 = 0, elec_Y2 = 0; //Electric bounds (swapped to induce tight first electrification)
+uint16_t elec_X = board_W, elec_Y = board_H, elec_X2 = 0, elec_Y2 = 0; //Electric bounds (swapped to induce tight first electrification)
 
 const uint16_t UNDOS = 512;
 uint16_t undos[UNDOS][4]; //[u][x, y, was, now]
@@ -50,8 +50,8 @@ uint16_t can_redo = 0;
 uint16_t u = 0;
 
 bool is_copying, is_data_to_paste;
-int16_t copy_X, copy_Y, copy_X2, copy_Y2, paste_X_dist, paste_Y_dist;
-int16_t paste_X, paste_Y, paste_X2, paste_Y2;
+uint16_t copy_X, copy_Y, copy_X2, copy_Y2, paste_X_dist, paste_Y_dist;
+uint16_t paste_X, paste_Y, paste_X2, paste_Y2;
 std::vector<char> *copy_data = new std::vector<char>();
 bool is_no_copy_source; //Data was from storage, not project
 
@@ -195,15 +195,15 @@ void display ()
     buffer += (paused ? "  paused" : "");
     buffer += (is_label_mode ? "  label mode" : "");
     std::string space = "";
-    int16_t s_len = screen_W - (buffer.length() - bar_off_len) - proj_name.length();
-    for (int16_t i = 0; i < s_len; ++i) { space += " "; }
+    uint16_t s_len = screen_W - (buffer.length() - bar_off_len) - proj_name.length();
+    for (uint16_t i = 0; i < s_len; ++i) { space += " "; }
     buffer += space + "\033[1;4m" + proj_name + "\033[0m";
   //Board
-    int16_t sx, sy;
+    uint16_t sx, sy;
     std::string prev_colour = "";
-    for (int16_t y = board_crop_Y, sy = 0; y < board_crop_Y2; ++y, ++sy) {
+    for (uint16_t y = board_crop_Y, sy = 0; y < board_crop_Y2; ++y, ++sy) {
         buffer += '\n';
-        for (int16_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
+        for (uint16_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
         
             buff = " ";
             char *look = &board[x][y];
@@ -364,8 +364,8 @@ void elecReCalculate ()
     elec_X2 = 0;
     elec_Y = board_H;
     elec_Y2 = 0;
-    for (int16_t x = 1; x < elec_W; ++x) {
-        for (int16_t y = 1; y < elec_H; ++y) {
+    for (uint16_t x = 1; x < elec_W; ++x) {
+        for (uint16_t y = 1; y < elec_H; ++y) {
             if (board[x][y]) {
                 if (x < elec_X) { elec_X = x; }
                 else if (x > elec_X2) { elec_X2 = x; }
@@ -454,7 +454,7 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
 
 uint8_t nextToLives (uint16_t _X, uint16_t _Y, bool _false_on_dead = false)
 {
-    auto nextToAdapter = [](int16_t _X, int16_t _Y) {
+    auto nextToAdapter = [](uint16_t _X, uint16_t _Y) {
         char look;
         look = board[_X][_Y - 1];
         if (look == UN_ADAPTER || look == PW_ADAPTER) { return NORTH; }
@@ -501,13 +501,13 @@ uint8_t nextToLives (uint16_t _X, uint16_t _Y, bool _false_on_dead = false)
 
 struct Branch
 {
-    int16_t x, y;
+    uint16_t x, y;
     uint8_t d;
 };
 
 Branch branch[8192];
 uint16_t branches = 0;
-uint16_t addBranch (int16_t _X, int16_t _Y, uint8_t prev_dir)
+uint16_t addBranch (uint16_t _X, uint16_t _Y, uint8_t prev_dir)
 {
     branch[branches].x = _X;
     branch[branches].y = _Y;
@@ -515,7 +515,7 @@ uint16_t addBranch (int16_t _X, int16_t _Y, uint8_t prev_dir)
     return branches++;
 }
 
-void powerAdapter (int16_t _X, int16_t _Y)
+void powerAdapter (uint16_t _X, uint16_t _Y)
 {
     bool is_found = false;
     char look;
@@ -534,8 +534,8 @@ uint16_t next_branch;
 void elec () //Electrify the board appropriately
 {
   //Reset the electrified
-    for (int16_t x = elec_X; x <= elec_X2; ++x) {
-        for (int16_t y = elec_Y; y <= elec_Y2; ++y) {
+    for (uint16_t x = elec_X; x <= elec_X2; ++x) {
+        for (uint16_t y = elec_Y; y <= elec_Y2; ++y) {
             char *look = &board[x][y];
             if      (*look == PW_WIRE)    { *look = UN_WIRE; }    //Powered Wire to Wire
             else if (*look == PW_H_WIRE)  { *look = UN_H_WIRE;  } //Powered H Wire to H Wire
@@ -706,8 +706,8 @@ void elec () //Electrify the board appropriately
     memset(branch, 0, sizeof(branch)); //Remove all existing branches
     branches = 0;
   //Components
-    for (int16_t x = elec_X; x <= elec_X2; ++x) {
-        for (int16_t y = elec_Y2; y >= elec_Y; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
+    for (uint16_t x = elec_X; x <= elec_X2; ++x) {
+        for (uint16_t y = elec_Y2; y >= elec_Y; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
             switch (board[x][y]) {
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
@@ -839,7 +839,7 @@ std::string getStdoutFromCmd(std::string cmd)
 
     std::string data;
     FILE * stream;
-    const int max_buffer = 256;
+    const uint8_t max_buffer = 255;
     char buffer[max_buffer];
     cmd.append(" 2>&1"); // Do we want STDERR?
 
@@ -1284,8 +1284,8 @@ int32_t main ()
                             paste_Y_dist = (copy_Y2 - copy_Y);
                             is_no_copy_source = false;
                             copy_data->clear();
-                            for (int16_t y = copy_Y; y < copy_Y2; ++y) {
-                                for (int16_t x = copy_X; x < copy_X2; ++x) {
+                            for (uint16_t y = copy_Y; y < copy_Y2; ++y) {
+                                for (uint16_t x = copy_X; x < copy_X2; ++x) {
                                     copy_data->push_back(board[x][y]);
                                 }
                             }
@@ -1561,7 +1561,7 @@ int32_t main ()
                               //Iterate through data
                                 if (len > 0) {
                                     uint8_t load_char;
-                                    int16_t x = top_left_X, y = top_left_Y;
+                                    uint16_t x = top_left_X, y = top_left_Y;
                                     for (uint32_t i = 0; i < len; ++i) {
                                         if (load_data[i] == '\n') {
                                             ++y;
