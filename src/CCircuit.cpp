@@ -2,6 +2,7 @@
 //Move variables into local scope
 //Break into multiple .cpp & .hpp
 //Don't allow movement out of bounds when pasting
+//Don't allow placement on bounds, remove all bounds checking
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
 //Give clearer save success
@@ -10,6 +11,7 @@
 //Fix delay in some key presses
 //Implement autosave & onexitsave
 //Implement smart far copy (jump to end of circuit)
+//Convert coords into uint16_t
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
@@ -118,40 +120,49 @@ void resizeScreen ()
 #define EMPTY       0
 #define UN_WIRE     1
 #define PW_WIRE     2
-#define UN_AND      3
-#define UN_NOT      4
-#define UN_XOR      5
-#define UN_BRIDGE   6
-#define PW_BRIDGE   7
-#define PW_POWER    8
-#define UN_WALL     9
-#define E_WALL      10
-#define UN_S_DIODE  11
-#define PW_S_DIODE  12
-#define UN_BIT      13
-#define PW_BIT      14
-#define UN_N_DIODE  15
-#define PW_N_DIODE  16
-#define UN_E_DIODE  17
-#define PW_E_DIODE  18
-#define UN_W_DIODE  19
-#define PW_W_DIODE  20
-#define U1_STRETCH  21
-#define P1_STRETCH  22
-#define P2_STRETCH  23
-#define P3_STRETCH  24
-#define UN_DELAY    25
-#define PW_DELAY    26
-#define UN_H_WIRE   27
-#define PW_H_WIRE   28
-#define UN_V_WIRE   29
-#define PW_V_WIRE   30
-#define PW_AND      31
-#define PW_NOT      32
-#define PW_XOR      33
-#define UN_LEAKYB   34
-#define PW_LEAKYB   35
-#define NOTHING     36
+#define UN_H_WIRE   3
+#define PW_H_WIRE   4
+#define UN_V_WIRE   5
+#define PW_V_WIRE   6
+#define UN_AND      7
+#define PW_AND      8
+#define UN_NOT      9
+#define PW_NOT      10
+#define UN_XOR      11
+#define PW_XOR      12
+#define UN_ADAPTER  13
+#define PW_ADAPTER  14
+#define UN_BRIDGE   15
+#define PW_BRIDGE   16
+#define UN_LEAKYB   17
+#define PW_LEAKYB   18
+#define PW_POWER    19
+#define UN_WALL     20
+#define E_WALL      21
+#define UN_BIT      22
+#define PW_BIT      23
+#define UN_N_DIODE  24
+#define PW_N_DIODE  25
+#define UN_E_DIODE  26
+#define PW_E_DIODE  27
+#define UN_S_DIODE  28
+#define PW_S_DIODE  29
+#define UN_W_DIODE  30
+#define PW_W_DIODE  31
+#define U1_STRETCH  32
+#define P1_STRETCH  33
+#define P2_STRETCH  34
+#define P3_STRETCH  35
+#define UN_DELAY    36
+#define PW_DELAY    37
+#define NOTHING     38
+
+const std::string display_colour[] = {
+    "30;47", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42", "37;43", "1;37;43", "37;41",         //0-9
+    "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44", //10-19
+    "1;30;40", "1;30;40", "1;30;47", "1;37;44", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42",   //20-29
+    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "" //30-38
+};
 
 bool to_crosshairs = false;
 void display ()
@@ -193,151 +204,107 @@ void display ()
     for (int32_t y = board_crop_Y, sy = 0; y < board_crop_Y2; ++y, ++sy) {
         buffer += '\n';
         for (int32_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
+        
             buff = " ";
             char *look = &board[x][y];
             std::string colour = "\033[0;";
+            std::string add_colour = "";
+
+            auto adapterColour = [x, y](char adapter) {
+                char look;
+                look = board[x][y - 1];
+                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                look = board[x + 1][y];
+                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                look = board[x][y + 1];
+                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                look = board[x - 1][y];
+                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                return display_colour[adapter];
+            };
+
             switch (*look) {
                 case EMPTY: //Empty
-                    colour += "30;47";
                     buff = (x >= elec_X && x < elec_X2 + 1 && y >= elec_Y && y < elec_Y2 + 1 ? " " : ".");
                     break;
                 case UN_WIRE: //Unpowered Wire
-                    colour += "30;47";
-                    buff = "#";
-                    break;
                 case PW_WIRE: //Powered Wire
-                    colour += "30;42";
                     buff = "#";
                     break;
                 case UN_AND: //AND
-                    colour += "37;43";
-                    buff = "A";
-                    break;
                 case PW_AND: //Powered AND
-                    colour += "1;37;43";
                     buff = "A";
                     break;
                 case UN_NOT: //NOT
-                    colour += "37;41";
-                    buff = "N";
-                    break;
                 case PW_NOT: //Powered NOT
-                    colour += "1;37;41";
                     buff = "N";
                     break;
                 case UN_XOR: //XOR
-                    colour += "37;45";
-                    buff = "X";
-                    break;
                 case PW_XOR: //Powered XOR
-                    colour += "1;37;45";
                     buff = "X";
                     break;
                 case UN_BRIDGE: //Bridge
-                    colour += "30;47";
-                    buff = "+";
-                    break;
                 case PW_BRIDGE: //Powered Bridge
-                    colour += "30;42";
-                    buff = "+";
-                    break;
                 case UN_LEAKYB: //Leaky Bridge
-                    colour += "4;30;47";
-                    buff = "+";
-                    break;
                 case PW_LEAKYB: //Powered Leaky Bridge
-                    colour += "4;30;42";
                     buff = "+";
                     break;
                 case PW_POWER: //Power
-                    colour += "1;37;44";
                     buff = "@";
                     break;
                 case UN_WALL: //Wall
-                    colour += "1;30;40";
                     buff = ";";
                     break;
                 case E_WALL: //Conductive Wall
-                    colour += "1;30;40";
                     buff = ":";
                     break;
                 case UN_BIT: //Bit
-                    colour += "1;30;47";
-                    buff = "B";
-                    break;
                 case PW_BIT: //Powered Bit
-                    colour += "1;37;44";
                     buff = "B";
                     break;
                 case UN_N_DIODE: //North Diode
-                    colour += "30;47";
-                    buff = "^";
-                    break;
                 case PW_N_DIODE: //Powered North Diode
-                    colour += "30;42";
                     buff = "^";
                     break;
                 case UN_E_DIODE: //East Diode
-                    colour += "30;47";
-                    buff = ">";
-                    break;
                 case PW_E_DIODE: //Powered East Diode
-                    colour += "30;42";
                     buff = ">";
                     break;
                 case UN_S_DIODE: //South Diode
-                    colour += "30;47";
-                    buff = "V";
-                    break;
                 case PW_S_DIODE: //Powered South Diode
-                    colour += "30;42";
                     buff = "V";
                     break;
                 case UN_W_DIODE: //West Diode
-                    colour += "30;47";
+                case PW_W_DIODE: //Powered West Diode
                     buff = "<";
                     break;
-                case PW_W_DIODE: //Powered West Diode
-                    colour += "30;42";
-                    buff = "<";
+                case U1_STRETCH: //
+                case P1_STRETCH: //
+                case P2_STRETCH: //
+                case P3_STRETCH: //Powered Stretcher
+                    buff = "$";
                     break;
                 case UN_DELAY: //Delay
-                    colour += "1;30;47";
-                    buff = "%";
-                    break;
                 case PW_DELAY: //Powered Delay
-                    colour += "1;30;42";
                     buff = "%";
                     break;
-                case U1_STRETCH:
-                case P1_STRETCH:
-                    colour += "1;30;47";
-                    buff = "$"; //Stretcher
+                case UN_ADAPTER: //Adapter
+                case PW_ADAPTER: //Powered Adapter
+                    add_colour = adapterColour(*look);
+                    buff = "O";
                     break;
-                case P2_STRETCH:
-                case P3_STRETCH:
-                    colour += "1;30;42";
-                    buff = "$"; //Powered Stretcher
+                case UN_H_WIRE: //Horizontal Wire
+                case PW_H_WIRE: //Powered Horizontal Wire
+                    buff = "-";
                     break;
-                case UN_H_WIRE:
-                    colour += "30;47";
-                    buff = "-"; //Horizontal Wire
-                    break;
-                case PW_H_WIRE:
-                    colour += "30;42";
-                    buff = "-"; //Powered Horizontal Wire
-                    break;
-                case UN_V_WIRE:
-                    colour += "30;47";
-                    buff = "|"; //Vertical Wire
-                    break;
-                case PW_V_WIRE:
-                    colour += "30;42";
-                    buff = "|"; //Powered Vertical Wire
+                case UN_V_WIRE: //Vertical Wire
+                case PW_V_WIRE: //Powered Vertical Wire
+                    buff = "|";
                     break;
             }
 
-            colour += "m";
+            if (add_colour == "" && *look < NOTHING) { add_colour = display_colour[*look]; }
+            colour += add_colour +"m";
             if (prev_colour != colour) { buff = colour + buff; }
             prev_colour = colour;
             
@@ -414,7 +381,6 @@ void elecReCalculate ()
 bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
 {
     if (_X < 0 || _Y < 0 || _X >= board_W || _Y >= board_H) { return false; }
-    char look = board[_X][_Y];
     uint8_t diode;
     uint8_t wire;
     char xd = 0;
@@ -425,6 +391,9 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
         case SOUTH: diode = PW_N_DIODE; wire = PW_V_WIRE; yd = 1;  break; //South: Powered N Diode, V Wire
         case WEST:  diode = PW_E_DIODE; wire = PW_H_WIRE; xd = -1; break; //West:  Powered E Diode, H Wire
     }
+    _X += xd;
+    _Y += yd;
+    char look = board[_X][_Y];
   //Check for conditions
     if (look == PW_BRIDGE || look == PW_LEAKYB) { //Powered Bridge/Powered Leaky Bridge
       //Check this Powered Bridge is powered in this direction
@@ -460,12 +429,13 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
                            || look == UN_AND
                            || look == UN_XOR
                            || look == PW_NOT
-                           || look == U1_STRETCH))      // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher
+                           || look == U1_STRETCH
+                           || look == UN_ADAPTER))      // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
            ) { return true; }
         return false; //Anything else could never power us
     }
   //Return for if checking for alive
-    return look == PW_WIRE                      //
+    return look == PW_WIRE                     //
         || look == wire                         //
         || look == PW_POWER                     //
         || look == diode                        // Powered by Wire/D Wire/Power/Diode
@@ -477,43 +447,53 @@ bool powerAtDir (int32_t _X, int32_t _Y, uint8_t _dir, bool _is_dead = false)
                           || look == UN_NOT
                           || look == P1_STRETCH
                           || look == P2_STRETCH
-                          || look == P3_STRETCH))   // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher
-        || (is_power_present && is_powered);    // Power
+                          || look == P3_STRETCH
+                          || look == PW_ADAPTER)) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
+        || (is_power_present && is_powered);      // Power
 }
 
 //TODO Fix bounds checking
-uint8_t nextToLives (int32_t _X, int32_t _Y, uint8_t mode) //mode: 0 AND, 1 OR, 2 NOT, 3 XOR, 4 Stretcher
+uint8_t nextToLives (int32_t _X, int32_t _Y, bool _false_on_dead = false)
 {
+    auto nextToAdapter = [](int32_t _X, int32_t _Y) {
+        char look;
+        look = board[_X][_Y - 1];
+        if (look == UN_ADAPTER || look == PW_ADAPTER) { return NORTH; }
+        look = board[_X + 1][_Y];
+        if (look == UN_ADAPTER || look == PW_ADAPTER) { return EAST; }
+        look = board[_X - 1][_Y];
+        if (look == UN_ADAPTER || look == PW_ADAPTER) { return WEST; }
+        return SOUTH;
+    };
+    uint8_t ignore_dir = nextToAdapter(_X, _Y);
     uint8_t lives = 0;
   //Check North
-    if      (mode == 0 && powerAtDir(_X, _Y - 1, NORTH, true)) { return 0; }
-    else if (powerAtDir(_X, _Y - 1, NORTH)) {
-        ++lives;
+    if (ignore_dir != NORTH) {
+        if (_false_on_dead && powerAtDir(_X, _Y, NORTH, true)) { return 0; }
+        else if (powerAtDir(_X, _Y, NORTH)) {
+            ++lives;
+        }
     }
   //Check East
-    if      (mode == 0 && powerAtDir(_X + 1, _Y, EAST, true)) { return 0; }
-    else if (powerAtDir(_X + 1, _Y, EAST)) {
-        ++lives;
+    if (ignore_dir != EAST) {
+        if (_false_on_dead && powerAtDir(_X, _Y, EAST, true)) { return 0; }
+        else if (powerAtDir(_X, _Y, EAST)) {
+            ++lives;
+        }
+    }
+  //Check South
+    if (ignore_dir != SOUTH) {
+        if (_false_on_dead && powerAtDir(_X, _Y, SOUTH, true)) { return 0; }
+        else if (powerAtDir(_X, _Y, SOUTH)) {
+            ++lives;
+        }
     }
   //Check West
-    if      (mode == 0 && powerAtDir(_X - 1, _Y, WEST, true)) { return 0; }
-    else if (powerAtDir(_X - 1, _Y, WEST)) {
-        ++lives;
-    }
-  //Return
-    return lives;
-}
-
-uint8_t betweenLives (int32_t _X, int32_t _Y)
-{
-    uint8_t lives = 0;
-  //Check East
-    if (powerAtDir(_X + 1, _Y, EAST)) {
-        ++lives;
-    }
-  //Check West
-    if (powerAtDir(_X - 1, _Y, WEST)) {
-        ++lives;
+    if (ignore_dir != WEST) {
+        if (_false_on_dead && powerAtDir(_X, _Y, WEST, true)) { return 0; }
+        if (powerAtDir(_X, _Y, WEST)) {
+            ++lives;
+        }
     }
   //Return
     return lives;
@@ -535,6 +515,21 @@ int32_t addBranch (int32_t _X, int32_t _Y, uint8_t prev_dir)
     return branches++;
 }
 
+void powerAdapter (int32_t _X, int32_t _Y)
+{
+    bool is_found = false;
+    char look;
+    look = board[_X][_Y - 1];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X, _Y - 1, NORTH); is_found = true; }
+    look = board[_X + 1][_Y];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X + 1, _Y, EAST);  is_found = true; }
+    look = board[_X][_Y + 1];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X, _Y + 1, SOUTH); is_found = true; }
+    look = board[_X - 1][_Y];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X - 1, _Y, WEST);  is_found = true; }
+    if (!is_found) { addBranch(_X, _Y + 1, SOUTH); }
+}
+
 uint32_t next_branch;
 void elec () //Electrify the board appropriately
 {
@@ -547,6 +542,7 @@ void elec () //Electrify the board appropriately
             else if (*look == PW_V_WIRE)  { *look = UN_V_WIRE;  } //Powered V Wire to V Wire
             else if (*look == PW_BRIDGE)  { *look = UN_BRIDGE;  } //Powered Bridge to Bridge
             else if (*look == PW_LEAKYB)  { *look = UN_LEAKYB;  } //Powered Leaky Bridge to Leaky Bridge
+            else if (*look == PW_ADAPTER) { *look = UN_ADAPTER; } //Powered Adapter to Adapter
             else if (*look == PW_N_DIODE) { *look = UN_N_DIODE; } //Powered N Diode to N Diode
             else if (*look == PW_E_DIODE) { *look = UN_E_DIODE; } //Powered E Diode to E Diode
             else if (*look == PW_S_DIODE) { *look = UN_S_DIODE; } //Powered S Diode to S Diode
@@ -571,9 +567,10 @@ void elec () //Electrify the board appropriately
             uint8_t *dir = &branch[b].d;
             bool is_bridge = (*look == UN_BRIDGE || *look == PW_BRIDGE || *look == UN_LEAKYB || *look == PW_LEAKYB);
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
-            else if (*look == UN_WIRE)   { *look = PW_WIRE; }    //Electrify Wire
-            else if (*look == UN_H_WIRE) { *look = PW_H_WIRE; }  //Electrify H Wire
-            else if (*look == UN_V_WIRE) { *look = PW_V_WIRE; }  //Electrify V Wire
+            else if (*look == UN_ADAPTER) { *look = PW_ADAPTER; } //Electrify Adapter
+            else if (*look == UN_WIRE)    { *look = PW_WIRE; }    //Electrify Wire
+            else if (*look == UN_H_WIRE)  { *look = PW_H_WIRE; }  //Electrify H Wire
+            else if (*look == UN_V_WIRE)  { *look = PW_V_WIRE; }  //Electrify V Wire
             else if (*look == E_WALL || is_bridge) { //If we've ended up in a Bridge, or Conductive Wall, continue in the direction we were going
               //Electrify & leak
                 if (*look == UN_BRIDGE) { *look = PW_BRIDGE; }
@@ -715,55 +712,60 @@ void elec () //Electrify the board appropriately
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                 {
-                  //Check if we're in a line of AND's, and if they are currently being activated
-                    bool is_left_present = false, is_left_alive = false, is_right_present = false, is_right_alive = false;
-                  //Seek horiz RIGHT across a potential line of AND's
+                    bool is_line = false;
+                    uint16_t line_east, line_west;
+                  //Seek across potential line of AND's
                     uint32_t tx = x + 1;
-                    while (tx < board_W && board[tx][y] == UN_AND || board[tx][y] == PW_AND) {
+                    while (tx < board_W && (board[tx][y] == UN_AND || board[tx][y] == PW_AND)) {
                         ++tx;
+                        is_line = true;
                     }
-                    is_right_alive   = powerAtDir(tx, y, EAST); //Is the line powered?
-                    is_right_present = powerAtDir(tx, y, EAST, true) || is_right_alive; //Is there something which could invalidate the AND (e.g. an off wire)?
-                  //Seek horiz LEFT across a potential line of AND's
+                    line_east = tx - 1;
                     tx = x - 1;
-                    while (tx > 0 && board[tx][y] == UN_AND || board[tx][y] == PW_AND) {
+                    while (tx > 0       && (board[tx][y] == UN_AND || board[tx][y] == PW_AND)) {
                         --tx;
+                        is_line = true;
                     }
-                    is_left_alive   = powerAtDir(tx, y, WEST); //Is the line powered?
-                    is_left_present = powerAtDir(tx, y, WEST, true) || is_left_alive; //Is there something which could invalidate the AND (e.g. an off wire)?
-                  //Check AND conditions
-                    board[x][y] = UN_AND;
-                    if ((is_left_present || is_right_present) && (is_left_present ? is_left_alive : true) && (is_right_present ? is_right_alive : true)) { //Are our flanks completely powered?
-                        if (powerAtDir(x, y - 1, NORTH) || (!powerAtDir(x, y - 1, NORTH, true) && is_left_alive && is_right_alive)) { //Are we powered from above; or is there nothing dead above us, and we have both flanks available?
-                            board[x][y] = PW_AND;
+                    line_west = tx + 1;
+                    if (is_line) {
+                        uint8_t alive = 0, dead = 0;
+                        alive += powerAtDir(line_east, y, EAST);
+                        alive += powerAtDir(line_west, y, WEST);
+                        dead  += powerAtDir(line_east, y, EAST, true);
+                        dead  += powerAtDir(line_west, y, WEST, true);
+                        if (alive && !dead && powerAtDir(x, y, NORTH)) {
                             addBranch(x, y + 1, SOUTH);
+                        }
+                    } else {
+                        if (nextToLives(x, y, true) > 1) {
+                            powerAdapter(x, y);
                         }
                     }
                     break;
                 }
                 case UN_NOT: //NOT
                 case PW_NOT: //Powered NOT
-                    if (!nextToLives(x, y, 2)) {
+                    if (!nextToLives(x, y)) {
                         board[x][y] = UN_NOT;
-                        addBranch(x, y + 1, SOUTH);
+                        powerAdapter(x, y);
                     } else {
                         board[x][y] = PW_NOT;
                     }
                     break;
                 case UN_XOR: //XOR
                 case PW_XOR: //Powered XOR
-                    if (nextToLives(x, y, 3) == 1) {
+                    if (nextToLives(x, y) == 1) {
                         board[x][y] = PW_XOR;
-                        addBranch(x, y + 1, SOUTH);
+                        powerAdapter(x, y);
                     } else {
                         board[x][y] = UN_XOR;
                     }
                     break;
                 case UN_DELAY: //Delay
                 case PW_DELAY: //Powered Delay
-                    if (nextToLives(x, y, 1)) {
+                    if (nextToLives(x, y)) {
                         board[x][y] = PW_DELAY;
-                        addBranch(x, y + 1, SOUTH);
+                        powerAdapter(x, y);
                     } else {
                         board[x][y] = UN_DELAY;
                     }
@@ -776,10 +778,10 @@ void elec () //Electrify the board appropriately
                   //Check if being reset
                   //Seek horiz RIGHT across a potential line of Bits
                     uint32_t tx = x;
-                    while (tx < board_W && board[tx][y] == UN_BIT || board[tx][y] == PW_BIT) {
+                    while (tx < board_W && (board[tx][y] == UN_BIT || board[tx][y] == PW_BIT)) {
                         ++tx;
                     }
-                    if (powerAtDir(tx, y, EAST)) {
+                    if (powerAtDir(tx - 1, y, EAST)) {
                         board[x][y] = UN_BIT;
                     } else {
                       //Seek horiz LEFT across a potential line of Bits
@@ -787,11 +789,11 @@ void elec () //Electrify the board appropriately
                         while (tx > 0 && board[tx][y] == UN_BIT || board[tx][y] == PW_BIT) {
                             --tx;
                         }
-                        if (powerAtDir(tx, y, WEST)) {
+                        if (powerAtDir(tx + 1, y, WEST)) {
                             board[x][y] = UN_BIT;
                         } else {
                             if (board[x][y] == PW_BIT) { //If already set
-                                addBranch(x, y + 1, SOUTH);
+                                powerAdapter(x, y);
                             }
                         }
                     }
@@ -801,11 +803,11 @@ void elec () //Electrify the board appropriately
                 case P2_STRETCH: //
                 case P3_STRETCH: // Powered Stretcher
                   //Check if we should be unpowered
-                    if (!powerAtDir(x, y - 1, NORTH)) {
+                    if (!powerAtDir(x, y, NORTH)) {
                         --board[x][y];
                     }
                     if (board[x][y] > P1_STRETCH) {
-                        addBranch(x, y + 1, SOUTH);
+                        powerAdapter(x, y);
                     }
                     break;
                 default:
@@ -978,6 +980,7 @@ int32_t main ()
               << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
               << "\nb\t\tplace bit"
               << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
+              << "\n-\t\tcomponent adapter"
               << "\n;\t\twall"
               << "\nyY\t\tload, save"
               << "\nv\t\timport component"
@@ -1232,6 +1235,11 @@ int32_t main ()
                         to_move = true;
                         break;
 
+                    case '-': //Component Adapter
+                        *look = UN_ADAPTER;
+                        to_move = true;
+                        break;
+
                     case 'z': //Undo
                         if (u == 0) { u = UNDOS; }
                         --u;
@@ -1460,6 +1468,7 @@ int32_t main ()
                                             case UN_S_DIODE: case PW_S_DIODE:    save_data += 'V'; break;
                                             case UN_DELAY: case PW_DELAY:        save_data += '%'; break;
                                             case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
+                                            case UN_ADAPTER: case PW_ADAPTER:    save_data += 'O'; break;
                                             case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
                                             case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
                                             case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
@@ -1571,6 +1580,7 @@ int32_t main ()
                                                 case '^': load_char = UN_N_DIODE; break;
                                                 case '%': load_char = UN_DELAY;   break;
                                                 case '$': load_char = U1_STRETCH; break;
+                                                case 'O': load_char = UN_ADAPTER; break;
                                                 case '>': load_char = UN_E_DIODE; break;
                                                 case '<': load_char = UN_W_DIODE; break;
                                                 case '-': load_char = UN_H_WIRE;  break;
