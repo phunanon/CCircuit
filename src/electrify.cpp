@@ -13,8 +13,9 @@ void wipeBoard ()
 {
   //Empty the current board
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
-  //Turn off all Switches
+  //Remove and turn off all Switches
     for (uint8_t i = 0; i < 10; ++i) {
+        placed_switches[i] = false;
         switches[i] = false;
     }
   //Remove all previous electricity
