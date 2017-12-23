@@ -907,20 +907,20 @@ std::string autoCompleteForFile (std::string input)
 
 
 
-bool inputted;
 std::string getInput (std::string _pretext = "", bool to_autocomplete = true)
 {
     std::string to_return = _pretext;
     std::cout << to_return;
     fflush(stdout);
-    while (!inputted) {
+    bool is_inputted = false;
+    while (!is_inputted) {
         while (kbhit()) {
             pressed_ch = getchar(); //Get the key
             if (pressed_ch == '\n') { //Done
-                inputted = true;
+                is_inputted = true;
             } else if (pressed_ch == 27) { //Escape
                 to_return = "";
-                inputted = true;
+                is_inputted = true;
             } else if (pressed_ch == 9 && to_autocomplete) { //Autocomplete
                 std::string auto_completed = autoCompleteForFile(to_return);
                 std::string auto_completed_end = auto_completed.substr(to_return.length(), auto_completed.length() - to_return.length());
@@ -953,7 +953,6 @@ std::string getInput (std::string _pretext = "", bool to_autocomplete = true)
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(64));
     }
-    inputted = false;
   //Trim
     while (to_return.length() > 1 && to_return.substr(to_return.length() - 2, to_return.length() - 1) == " ") { to_return.substr(0, to_return.length() - 2); }
     return to_return;
@@ -1142,38 +1141,44 @@ int32_t main ()
 {
   //Load shite to listen to pressed keys
     loadKeyListen();
-    std::cout << "CCircuit - a Linux Terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n"
-              << "\nINSTRUCTIONS"
-              << "\n[space]\t\tremove anything"
-              << "\n[enter]\t\telectrify cursor"
-              << "\n.oeu\t\tup, left, down, right"
-              << "\n>OEU\t\tfar up, far left, far down, far right"
-              << "\nhH\t\tplace wire, toggle auto-bridge for wires and diodes"
-              << "\na\t\ttoggle general use wire/directional wire"
-              << "\nL\t\tfar lay under cursor"
-              << "\nfF\t\tcrosshairs, go-to coord"
-              << "\n0-9\t\tplace/toggle switch"
-              << "\ngcGC\t\tNorth/South/West/East diodes"
-              << "\nrRl\t\tbridge, leaky bridge, power"
-              << "\ndDtns\t\tdelay, stretcher, AND, NOT, XOR"
-              << "\nb\t\tplace bit"
-              << "\nPpiI\t\tpause, next, slow-motion, fast-motion"
-              << "\n-\t\tcomponent adapter"
-              << "\n;\t\twall"
-              << "\nyY\t\tload, save"
-              << "\nv\t\timport component"
-              << "\n'\t\ttoggle [lowercase] label mode"
-              << "\nzZ\t\tundo, redo"
-              << "\nxbBkKjJmw\tinitiate/complete/discard selection, paste, paste unelectrified, or move, or swap, or clear area, or paste mask, or paste x flip, or paste y flip"
-              << "\nq\t\tquit"
-              << "\n\nAfter initiating a selection, you can do a Save to export that component.\n\n\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
+    auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
+  //Welcome screen
+    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m"; }; //Colour text to white on black
+    std::cout << "CCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n"
+              << "\nINSTRUCTIONS\n============"
+              << "\n"+ wh("[space]") +"\t\tremove anything"
+              << "\n"+ wh("[enter]") +"\t\telectrify cursor"
+              << "\n"+ wh(".oeu") +"\t\tup, left, down, right"
+              << "\n"+ wh(">OEU") +"\t\tfar up, far left, far down, far right"
+              << "\n"+ wh("hH") +"\t\tplace wire, toggle auto-bridge for wires and diodes"
+              << "\n"+ wh("a") +"\t\ttoggle general use wire/directional wire"
+              << "\n"+ wh("L") +"\t\tfar lay under cursor"
+              << "\n"+ wh("fF") +"\t\tcrosshairs, go-to coord"
+              << "\n"+ wh("0-9") +"\t\tplace/toggle switch"
+              << "\n"+ wh("gcGC") +"\t\tNorth/South/West/East diodes"
+              << "\n"+ wh("rRl") +"\t\tbridge, leaky bridge, power"
+              << "\n"+ wh("dDtns") +"\t\tdelay, stretcher, AND, NOT, XOR"
+              << "\n"+ wh("b") +"\t\tplace bit"
+              << "\n"+ wh("PpiI") +"\t\tpause, next, slow-motion, fast-motion"
+              << "\n"+ wh("-") +"\t\tcomponent adapter"
+              << "\n"+ wh(";") +"\t\twall"
+              << "\n"+ wh("yY") +"\t\tload, save"
+              << "\n"+ wh("v") +"\t\timport component"
+              << "\n"+ wh("'") +"\t\ttoggle [lowercase] label mode"
+              << "\n"+ wh("zZ") +"\t\tundo, redo"
+              << "\n"+ wh("xbBkKjJmw") +"\tinitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
+              << "\n"+ wh("qQ") +"\t\tquit/no onexitsave quit"
+              << "\n\nAfter initiating a selection, you can do a Save to export that component."
+              << "\n\nINFORMATION\n===========\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
-    while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-    std::cout << "Initialising board..." << std::endl;
+    std::cout << "\n\nInitialising board..." << std::endl;
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W); //Set the board Empty
     prev_dir_Y = 1;
-    std::cout << "Load onexitsave..." << std::endl;
-    loadBoard("onexitsave");
+    std::cout << "\033[37;40mLoad onexitsave? (Y/n): "; fflush(stdout);
+    if (getchar() != 'n') {
+        std::cout << "Load onexitsave..." << std::endl;
+        loadBoard("onexitsave");
+    }
 
 
     auto clock = std::chrono::system_clock::now();
@@ -1582,13 +1587,16 @@ int32_t main ()
                         break;
 
                     case 'q': //Quit
+                    case 'Q': //No onexitsave Quit
                     {
-                        std::cout << "\033[0;37;40mAre you sure you want to quit (y/N)?" << std::endl;
-                        while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                        std::cout << std::string("\033[0;37;40mAre you sure you want to quit") + (pressed_ch == 'Q' ? " without onexitsave" : "") + " (y/N)?" << std::endl;
+                        kbPause();
                         char sure = getchar();
                         if (sure == 'y') {
-                            std::cout << "On-exit saving...\033[0m" << std::endl;
-                            saveBoard("onexitsave");
+                            if (pressed_ch != 'Q') { 
+                                std::cout << "On-exit saving...\033[0m" << std::endl;
+                                saveBoard("onexitsave");
+                            }
                             std::cout << "Quit.\033[0m" << std::endl;
                             run = false;
                         }
@@ -1598,7 +1606,7 @@ int32_t main ()
                     case 'Y': //Save project/component
                     {
                         bool is_save_component = is_data_to_paste && !is_no_copy_source;
-                        std::cout << "\033[0;37;40mSaving \033[1;37;40m";
+                        std::cout << "\033[0;37;40mSaving  \033[1;37;40m";
                         if (is_save_component) {
                             std::cout << "COMPONENT" << std::endl;
                         } else {
