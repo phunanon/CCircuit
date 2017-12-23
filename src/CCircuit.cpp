@@ -5,10 +5,10 @@
 //Make bikeyboardal
 //Ensure paste text fits on screen at all sizes
 //Give clearer save success
-//Tool to create blank board
 //Fix stretcher powered by diode from flank
 //Fix delay in some key presses
 //Implement autosave
+//Implement copy-paste undo/restore
 //Implement smart far copy (jump to end of circuit)
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
@@ -960,6 +960,20 @@ std::string getInput (std::string _pretext = "", bool to_autocomplete = true)
 
 
 
+void wipeBoard ()
+{
+  //Empty the current board
+    memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
+  //Turn off all Switches
+    for (uint8_t i = 0; i < 10; ++i) {
+        switches[i] = false;
+    }
+  //Remove all previous electricity
+    memset(branch, 0, sizeof(branch));
+    branches = 0;
+}
+
+
 void saveBoard (std::string save_name, bool _is_component = false)
 {
     if (!_is_component) { proj_name = save_name; }
@@ -1060,15 +1074,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
         is_no_copy_source = true;
         copy_X = copy_Y = copy_X2 = copy_Y2 = paste_X = paste_Y = paste_X2 = paste_Y2 = -1;
     } else {
-      //Empty the current board
-        memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
-      //Turn off all Switches
-        for (uint8_t i = 0; i < 10; ++i) {
-            switches[i] = false;
-        }
-      //Remove all previous electricity
-        memset(branch, 0, sizeof(branch));
-        branches = 0;
+        wipeBoard();
     }
   //Iterate through data
     if (len > 0) {
@@ -1143,31 +1149,29 @@ int32_t main ()
     loadKeyListen();
     auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
   //Welcome screen
-    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m"; }; //Colour text to white on black
+    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t\t"; }; //Colour text to white on black
     std::cout << "CCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n"
               << "\nINSTRUCTIONS\n============"
-              << "\n"+ wh("[space]") +"\t\tremove anything"
-              << "\n"+ wh("[enter]") +"\t\telectrify cursor"
-              << "\n"+ wh(".oeu") +"\t\tup, left, down, right"
-              << "\n"+ wh(">OEU") +"\t\tfar up, far left, far down, far right"
-              << "\n"+ wh("hH") +"\t\tplace wire, toggle auto-bridge for wires and diodes"
-              << "\n"+ wh("a") +"\t\ttoggle general use wire/directional wire"
-              << "\n"+ wh("L") +"\t\tfar lay under cursor"
-              << "\n"+ wh("fF") +"\t\tcrosshairs, go-to coord"
-              << "\n"+ wh("0-9") +"\t\tplace/toggle switch"
-              << "\n"+ wh("gcGC") +"\t\tNorth/South/West/East diodes"
-              << "\n"+ wh("rRl") +"\t\tbridge, leaky bridge, power"
-              << "\n"+ wh("dDtns") +"\t\tdelay, stretcher, AND, NOT, XOR"
-              << "\n"+ wh("b") +"\t\tplace bit"
-              << "\n"+ wh("PpiI") +"\t\tpause, next, slow-motion, fast-motion"
-              << "\n"+ wh("-") +"\t\tcomponent adapter"
-              << "\n"+ wh(";") +"\t\twall"
-              << "\n"+ wh("yY") +"\t\tload, save"
-              << "\n"+ wh("v") +"\t\timport component"
-              << "\n"+ wh("'") +"\t\ttoggle [lowercase] label mode"
-              << "\n"+ wh("zZ") +"\t\tundo, redo"
-              << "\n"+ wh("xbBkKjJmw") +"\tinitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
-              << "\n"+ wh("qQ") +"\t\tquit/no onexitsave quit"
+              << "\n"+ wh("[space]") +"remove anything"
+              << "\n"+ wh("[enter]") +"electrify cursor"
+              << "\n"+ wh(".oeu") +"up, left, down, right"
+              << "\n"+ wh(">OEU") +"far up, far left, far down, far right"
+              << "\n"+ wh("hH") +"place wire, toggle auto-bridge for wires and diodes"
+              << "\n"+ wh("a") +"toggle general use wire/directional wire"
+              << "\n"+ wh("L") +"far lay under cursor"
+              << "\n"+ wh("fF") +"crosshairs, go-to coord"
+              << "\n"+ wh("0-9") +"place/toggle switch"
+              << "\n"+ wh("gcGC") +"North/South/West/East diodes"
+              << "\n"+ wh("rRl") +"bridge, leaky bridge, power"
+              << "\n"+ wh("dDtnsb") +"delay, stretcher, AND, NOT, XOR, bit"
+              << "\n"+ wh("-") +"component adapter"
+              << "\n"+ wh("PpiI") +"pause, next, slow-motion, fast-motion"
+              << "\n"+ wh(";:") +"wall, conductive wall"
+              << "\n"+ wh("yYvV") +"load, save, import component, wipe board"
+              << "\n"+ wh("'") +"toggle [lowercase] label mode"
+              << "\n"+ wh("zZ") +"undo, redo"
+              << "\n"+ wh("xbBkKjJmw") +"\b\b\b\b\b\b\b\binitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
+              << "\n"+ wh("qQ") +"quit/no onexitsave quit"
               << "\n\nAfter initiating a selection, you can do a Save to export that component."
               << "\n\nINFORMATION\n===========\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
@@ -1588,11 +1592,9 @@ int32_t main ()
 
                     case 'q': //Quit
                     case 'Q': //No onexitsave Quit
-                    {
                         std::cout << std::string("\033[0;37;40mAre you sure you want to quit") + (pressed_ch == 'Q' ? " without onexitsave" : "") + " (y/N)?" << std::endl;
                         kbPause();
-                        char sure = getchar();
-                        if (sure == 'y') {
+                        if (getchar() == 'y') {
                             if (pressed_ch != 'Q') { 
                                 std::cout << "On-exit saving...\033[0m" << std::endl;
                                 saveBoard("onexitsave");
@@ -1600,7 +1602,6 @@ int32_t main ()
                             std::cout << "Quit.\033[0m" << std::endl;
                             run = false;
                         }
-                    }
                         break;
 
                     case 'Y': //Save project/component
@@ -1643,6 +1644,15 @@ int32_t main ()
                             }
                         }
                     }
+                        break;
+
+                    case 'V':
+                        std::cout << "\033[0;37;40mAre you sure you want to wipe the board? (y/N)?" << std::endl;
+                        kbPause();
+                        if (getchar() == 'y') {
+                            wipeBoard();
+                            elecReCalculate();
+                        }
                         break;
 
                     case 'F': //Go-to
