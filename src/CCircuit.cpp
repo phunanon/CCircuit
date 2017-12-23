@@ -8,7 +8,7 @@
 //Tool to create blank board
 //Fix stretcher powered by diode from flank
 //Fix delay in some key presses
-//Implement autosave & onexitsave
+//Implement autosave
 //Implement smart far copy (jump to end of circuit)
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
@@ -960,6 +960,181 @@ std::string getInput (std::string _pretext = "", bool to_autocomplete = true)
 }
 
 
+
+void saveBoard (std::string save_name, bool _is_component = false)
+{
+    if (!_is_component) { proj_name = save_name; }
+  //Recalculate electrification area
+    elecReCalculate();
+    std::cout << "Saving..." << std::endl;
+    system(("rm " + save_name + ".gz &> /dev/null").c_str());
+    std::string save_data = "";
+    
+    uint16_t x1, y1, x2, y2;
+    if (_is_component) {
+        x1 = copy_X;
+        y1 = copy_Y;
+        x2 = copy_X2 - 1;
+        y2 = copy_Y2 - 1;
+    } else {
+        x1 = elec_X;
+        y1 = elec_Y;
+        x2 = elec_X2;
+        y2 = elec_Y2;
+    }
+    
+    for (uint16_t y = y1; y <= y2; ++y) {
+        for (uint16_t x = x1; x <= x2; ++x) {
+            switch (board[x][y]) {
+                case EMPTY:                          save_data += ' '; break;
+                case UN_WIRE: case PW_WIRE:          save_data += '#'; break;
+                case UN_AND: case PW_AND:            save_data += 'A'; break;
+                case UN_NOT: case PW_NOT:            save_data += 'N'; break;
+                case UN_XOR: case PW_XOR:            save_data += 'X'; break;
+                case UN_BRIDGE: case PW_BRIDGE:      save_data += '+'; break;
+                case UN_LEAKYB: case PW_LEAKYB:      save_data += '~'; break;
+                case PW_POWER:                       save_data += '@'; break;
+                case UN_WALL:                        save_data += ';'; break;
+                case E_WALL:                         save_data += ':'; break;
+                case UN_BIT: case PW_BIT:            save_data += 'B'; break;
+                case UN_N_DIODE: case PW_N_DIODE:    save_data += '^'; break;
+                case UN_E_DIODE: case PW_E_DIODE:    save_data += '>'; break;
+                case UN_S_DIODE: case PW_S_DIODE:    save_data += 'V'; break;
+                case UN_DELAY: case PW_DELAY:        save_data += '%'; break;
+                case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
+                case UN_ADAPTER: case PW_ADAPTER:    save_data += 'O'; break;
+                case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
+                case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
+                case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
+            }
+            if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
+                save_data += board[x][y] - 2;
+            } else if (board[x][y] >= 97 && board[x][y] <= 122) { //Is label?
+                save_data += board[x][y];
+            }
+        }
+        save_data += '\n';
+    }
+    std::ofstream out(save_name.c_str());
+    out << save_data;
+    out.close();
+    std::cout << "Compressing..." << std::endl;
+    system((SYSPATH + "gzip " + save_name).c_str());
+}
+
+
+void loadBoard (std::string load_name, bool _is_component = false)
+{
+  //Decompress project from storage
+    std::cout << "Decompressing..." << std::endl;
+    system(("cp " + load_name + ".gz load.gz").c_str());
+    system((SYSPATH + "gzip -d load.gz").c_str());
+    std::string load_data = "";
+    std::ifstream in("load");
+    load_data = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+    system("rm load");
+    std::cout << "Loading..." << std::endl;
+  //Load project/component from decompressed data
+    uint64_t len = load_data.length();
+    uint16_t top_left_X = 0, top_left_Y = 0;
+  //Either: find rough project dimensions to place the project in the middle of the board OR to define paste size for component
+    uint16_t rough_W, rough_H;
+    for (uint16_t i = 0; i < len; ++i) {
+        if (load_data[i] == '\n') {
+            rough_W = i;
+            rough_H = len / i;
+            if (_is_component) {
+                paste_X_dist = rough_W;
+                paste_Y_dist = rough_H - 1;
+            } else {
+                top_left_X = board_W/2 - rough_W/2;
+                top_left_Y = board_H/2 - rough_H/2;
+            }
+            break;
+        }
+    }
+  //Component/project specific preparations
+    if (_is_component) {
+        copy_data->clear();
+        is_data_to_paste = true;
+        is_no_copy_source = true;
+        copy_X = copy_Y = copy_X2 = copy_Y2 = paste_X = paste_Y = paste_X2 = paste_Y2 = -1;
+    } else {
+      //Empty the current board
+        memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
+      //Turn off all Switches
+        for (uint8_t i = 0; i < 10; ++i) {
+            switches[i] = false;
+        }
+      //Remove all previous electricity
+        memset(branch, 0, sizeof(branch));
+        branches = 0;
+    }
+  //Iterate through data
+    if (len > 0) {
+        uint8_t load_char;
+        uint16_t x = top_left_X, y = top_left_Y;
+        for (uint32_t i = 0; i < len; ++i) {
+            if (load_data[i] == '\n') {
+                ++y;
+                x = top_left_X;
+            } else {
+                load_char = EMPTY;
+                switch (load_data[i])
+                {
+                    case ' ': break; //Empty
+                    case '#': load_char = UN_WIRE;    break;
+                    case 'A': load_char = UN_AND;     break;
+                    case 'N': load_char = UN_NOT;     break;
+                    case 'X': load_char = UN_XOR;     break;
+                    case '+': load_char = UN_BRIDGE;  break;
+                    case '~': load_char = UN_LEAKYB;  break;
+                    case '@': load_char = PW_POWER;   break;
+                    case 'V': load_char = UN_S_DIODE; break;
+                    case ';': load_char = UN_WALL;    break;
+                    case ':': load_char = E_WALL;     break;
+                    case 'B': load_char = UN_BIT;     break;
+                    case '^': load_char = UN_N_DIODE; break;
+                    case '%': load_char = UN_DELAY;   break;
+                    case '$': load_char = U1_STRETCH; break;
+                    case 'O': load_char = UN_ADAPTER; break;
+                    case '>': load_char = UN_E_DIODE; break;
+                    case '<': load_char = UN_W_DIODE; break;
+                    case '-': load_char = UN_H_WIRE;  break;
+                    case '|': load_char = UN_V_WIRE;  break;
+                }
+                if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
+                {
+                    switch_num = load_data[i] - 48;
+                    load_char = switch_num + 50;
+                    switches[switch_num] = false; //Set its power
+                    placed_switches[switch_num] = true; //Say it's placed
+                } else if (load_data[i] >= 97 && load_data[i] <= 122) { //Is label?
+                    load_char = load_data[i];
+                }
+                if (_is_component) {
+                    copy_data->push_back(load_char);
+                } else {
+                    board[x][y] = load_char;
+                }
+                ++x;
+            }
+        }
+      //Recalculate electrification area
+        elecReCalculate();
+      //Move cursor
+        if (!_is_component && proj_name != load_name) {
+            cursor_X = elec_X + MOVE_FAR*2;
+            cursor_Y = elec_Y + MOVE_FAR;
+          //Set project name
+            proj_name = load_name;
+        }
+    }
+}
+
+
+
 uint16_t start_label_X; //Label's X
 char prev_dir_X, prev_dir_Y, prev_Z, elec_counter;
 uint16_t prev_X, prev_Y;
@@ -967,7 +1142,7 @@ int32_t main ()
 {
   //Load shite to listen to pressed keys
     loadKeyListen();
-    std::cout << "Patrick Bowen @phunanon 2017\n"
+    std::cout << "CCircuit - a Linux Terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n"
               << "\nINSTRUCTIONS"
               << "\n[space]\t\tremove anything"
               << "\n[enter]\t\telectrify cursor"
@@ -994,11 +1169,11 @@ int32_t main ()
               << "\n\nAfter initiating a selection, you can do a Save to export that component.\n\n\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
     while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-    std::cout << "Loading board..." << std::endl;
+    std::cout << "Initialising board..." << std::endl;
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W); //Set the board Empty
-    std::cout << "Board loaded." << std::endl;
     prev_dir_Y = 1;
-    std::cout << "Loading complete." << std::endl;
+    std::cout << "Load onexitsave..." << std::endl;
+    loadBoard("onexitsave");
 
 
     auto clock = std::chrono::system_clock::now();
@@ -1412,6 +1587,8 @@ int32_t main ()
                         while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
                         char sure = getchar();
                         if (sure == 'y') {
+                            std::cout << "On-exit saving...\033[0m" << std::endl;
+                            saveBoard("onexitsave");
                             std::cout << "Quit.\033[0m" << std::endl;
                             run = false;
                         }
@@ -1428,69 +1605,12 @@ int32_t main ()
                             std::cout << "PROJECT" << std::endl;
                         }
                         std::cout << "\033[0;37;40mSave name: ";
-                        std::string save = getInput(proj_name + (is_save_component ? "-" : ""));
-                        if (save.length()) {
+                        std::string save_name = getInput(proj_name + (is_save_component ? "-" : ""));
+                        if (save_name.length()) {
                             std::cout << std::endl << "Confirm? (y/N)" << std::endl;
-                            char sure = getchar();
-                            if (sure == 'y') {
-                              //Recalculate electrification area
-                                elecReCalculate();
+                            if (getchar() == 'y') {
                               //Save project to storage
-                                if (!is_save_component) { proj_name = save; }
-                                std::cout << "Saving..." << std::endl;
-                                system(("rm " + save + ".gz &> /dev/null").c_str());
-                                std::string save_data = "";
-                                
-                                uint16_t x1, y1, x2, y2;
-                                if (is_save_component) {
-                                    x1 = copy_X;
-                                    y1 = copy_Y;
-                                    x2 = copy_X2 - 1;
-                                    y2 = copy_Y2 - 1;
-                                } else {
-                                    x1 = elec_X;
-                                    y1 = elec_Y;
-                                    x2 = elec_X2;
-                                    y2 = elec_Y2;
-                                }
-                                
-                                for (uint16_t y = y1; y <= y2; ++y) {
-                                    for (uint16_t x = x1; x <= x2; ++x) {
-                                        switch (board[x][y]) {
-                                            case EMPTY:                          save_data += ' '; break;
-                                            case UN_WIRE: case PW_WIRE:          save_data += '#'; break;
-                                            case UN_AND: case PW_AND:            save_data += 'A'; break;
-                                            case UN_NOT: case PW_NOT:            save_data += 'N'; break;
-                                            case UN_XOR: case PW_XOR:            save_data += 'X'; break;
-                                            case UN_BRIDGE: case PW_BRIDGE:      save_data += '+'; break;
-                                            case UN_LEAKYB: case PW_LEAKYB:      save_data += '~'; break;
-                                            case PW_POWER:                       save_data += '@'; break;
-                                            case UN_WALL:                        save_data += ';'; break;
-                                            case E_WALL:                         save_data += ':'; break;
-                                            case UN_BIT: case PW_BIT:            save_data += 'B'; break;
-                                            case UN_N_DIODE: case PW_N_DIODE:    save_data += '^'; break;
-                                            case UN_E_DIODE: case PW_E_DIODE:    save_data += '>'; break;
-                                            case UN_S_DIODE: case PW_S_DIODE:    save_data += 'V'; break;
-                                            case UN_DELAY: case PW_DELAY:        save_data += '%'; break;
-                                            case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
-                                            case UN_ADAPTER: case PW_ADAPTER:    save_data += 'O'; break;
-                                            case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
-                                            case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
-                                            case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
-                                        }
-                                        if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
-                                            save_data += board[x][y] - 2;
-                                        } else if (board[x][y] >= 97 && board[x][y] <= 122) { //Is label?
-                                            save_data += board[x][y];
-                                        }
-                                    }
-                                    save_data += '\n';
-                                }
-                                std::ofstream out(save.c_str());
-                                out << save_data;
-                                out.close();
-                                std::cout << "Compressing..." << std::endl;
-                                system((SYSPATH + "gzip " + save).c_str());
+                                saveBoard(save_name, is_save_component);
                             }
                         }
                     }
@@ -1507,117 +1627,11 @@ int32_t main ()
                             std::cout << "PROJECT" << std::endl;
                         }
                         std::cout << "\033[0;37;40mLoad name: ";
-                        std::string load = getInput();
-                        if (load.length()) {
+                        std::string load_name = getInput();
+                        if (load_name.length()) {
                             std::cout << std::endl << "Confirm? (y/N)" << std::endl;
-                            char sure = getchar();
-                            if (sure == 'y') {
-                              //Decompress project from storage
-                                std::cout << "Decompressing..." << std::endl;
-                                system(("cp " + load + ".gz load.gz").c_str());
-                                system((SYSPATH + "gzip -d load.gz").c_str());
-                                std::string load_data = "";
-                                std::ifstream in("load");
-                                load_data = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-                                in.close();
-                                system("rm load");
-                                std::cout << "Loading..." << std::endl;
-                              //Load project/component from decompressed data
-                                uint64_t len = load_data.length();
-                                uint16_t top_left_X = 0, top_left_Y = 0;
-                              //Either: find rough project dimensions to place the project in the middle of the board OR to define paste size for component
-                                uint16_t rough_W, rough_H;
-                                for (uint16_t i = 0; i < len; ++i) {
-                                    if (load_data[i] == '\n') {
-                                        rough_W = i;
-                                        rough_H = len / i;
-                                        if (is_load_component) {
-                                            paste_X_dist = rough_W;
-                                            paste_Y_dist = rough_H - 1;
-                                        } else {
-                                            top_left_X = board_W/2 - rough_W/2;
-                                            top_left_Y = board_H/2 - rough_H/2;
-                                        }
-                                        break;
-                                    }
-                                }
-                              //Component/project specific preparations
-                                if (is_load_component) {
-                                    copy_data->clear();
-                                    is_data_to_paste = true;
-                                    is_no_copy_source = true;
-                                    copy_X = copy_Y = copy_X2 = copy_Y2 = paste_X = paste_Y = paste_X2 = paste_Y2 = -1;
-                                } else {
-                                  //Empty the current board
-                                    memset(board, 0, sizeof(board[0][0]) * board_H * board_W);
-                                  //Turn off all Switches
-                                    for (uint8_t i = 0; i < 10; ++i) {
-                                        switches[i] = false;
-                                    }
-                                  //Remove all previous electricity
-                                    memset(branch, 0, sizeof(branch));
-                                    branches = 0;
-                                }
-                              //Iterate through data
-                                if (len > 0) {
-                                    uint8_t load_char;
-                                    uint16_t x = top_left_X, y = top_left_Y;
-                                    for (uint32_t i = 0; i < len; ++i) {
-                                        if (load_data[i] == '\n') {
-                                            ++y;
-                                            x = top_left_X;
-                                        } else {
-                                            load_char = EMPTY;
-                                            switch (load_data[i])
-                                            {
-                                                case ' ': break; //Empty
-                                                case '#': load_char = UN_WIRE;    break;
-                                                case 'A': load_char = UN_AND;     break;
-                                                case 'N': load_char = UN_NOT;     break;
-                                                case 'X': load_char = UN_XOR;     break;
-                                                case '+': load_char = UN_BRIDGE;  break;
-                                                case '~': load_char = UN_LEAKYB;  break;
-                                                case '@': load_char = PW_POWER;   break;
-                                                case 'V': load_char = UN_S_DIODE; break;
-                                                case ';': load_char = UN_WALL;    break;
-                                                case ':': load_char = E_WALL;     break;
-                                                case 'B': load_char = UN_BIT;     break;
-                                                case '^': load_char = UN_N_DIODE; break;
-                                                case '%': load_char = UN_DELAY;   break;
-                                                case '$': load_char = U1_STRETCH; break;
-                                                case 'O': load_char = UN_ADAPTER; break;
-                                                case '>': load_char = UN_E_DIODE; break;
-                                                case '<': load_char = UN_W_DIODE; break;
-                                                case '-': load_char = UN_H_WIRE;  break;
-                                                case '|': load_char = UN_V_WIRE;  break;
-                                            }
-                                            if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
-                                            {
-                                                switch_num = load_data[i] - 48;
-                                                load_char = switch_num + 50;
-                                                switches[switch_num] = false; //Set its power
-                                                placed_switches[switch_num] = true; //Say it's placed
-                                            } else if (load_data[i] >= 97 && load_data[i] <= 122) { //Is label?
-                                                load_char = load_data[i];
-                                            }
-                                            if (is_load_component) {
-                                                copy_data->push_back(load_char);
-                                            } else {
-                                                board[x][y] = load_char;
-                                            }
-                                            ++x;
-                                        }
-                                    }
-                                  //Recalculate electrification area
-                                    elecReCalculate();
-                                  //Move cursor
-                                    if (!is_load_component && proj_name != load) {
-                                        cursor_X = elec_X + MOVE_FAR*2;
-                                        cursor_Y = elec_Y + MOVE_FAR;
-                                      //Set project name
-                                        proj_name = load;
-                                    }
-                                }
+                            if (getchar() == 'y') {
+                                loadBoard(load_name, is_load_component);
                             }
                         }
                     }
