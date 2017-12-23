@@ -425,7 +425,6 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
          || (_dir == NORTH &&
                            (  look == UN_BIT
                            || look == UN_DELAY
-                           || look == PW_DELAY
                            || look == UN_AND
                            || look == UN_XOR
                            || look == PW_NOT
@@ -713,6 +712,7 @@ void elec () //Electrify the board appropriately
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                 {
+                    board[x][y] = UN_AND;
                     bool is_line = false;
                     uint16_t line_east, line_west;
                   //Seek across potential line of AND's
@@ -736,10 +736,12 @@ void elec () //Electrify the board appropriately
                         dead  += powerAtDir(line_west, y, WEST, true);
                         if (alive && !dead && powerAtDir(x, y, NORTH)) {
                             addBranch(x, y + 1, SOUTH);
+                            board[x][y] = PW_AND;
                         }
                     } else {
                         if (nextToLives(x, y, true) > 1) {
                             powerAdapter(x, y);
+                            board[x][y] = PW_AND;
                         }
                     }
                     break;
