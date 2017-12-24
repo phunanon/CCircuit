@@ -310,16 +310,8 @@ void loadBoard (std::string load_name, bool _is_component = false)
 }
 
 
-
-uint16_t start_label_X; //Label's X
-char prev_dir_X, prev_dir_Y, prev_Z, elec_counter;
-uint16_t prev_X, prev_Y;
-int32_t main ()
+void outputWelcome ()
 {
-  //Load shite to listen to pressed keys
-    loadKeyListen();
-    auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
-  //Welcome screen
     auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t\t"; }; //Colour text to white on black
     auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t\t"; }; //Colour text to light red on black
     auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t\t"; }; //Colour text to light blue on black
@@ -345,10 +337,25 @@ int32_t main ()
               << "\n"+ wh("zZ") +"undo, redo"
               << "\n"+ wh("xbBkKjJmw") +"\b\b\b\b\b\b\b\binitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
               << "\n"+ wh("qQ") +"quit/no onexitsave quit"
-              << "\n\nAfter initiating a selection, you can do a Save to export that component."
+              << "\n"+ wh("?") +"show this welcome screen"
+              << "\n\n- After initiating a selection, you can do a Save to export that component."
               << bl("\n\nINFORMATION\n===========")
-              << "\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
+              << "\n- Electronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
+}
+
+
+
+uint16_t start_label_X; //Label's X
+char prev_dir_X, prev_dir_Y, prev_Z, elec_counter;
+uint16_t prev_X, prev_Y;
+int32_t main ()
+{
+  //Load shite to listen to pressed keys
+    loadKeyListen();
+    auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
+  //Welcome screen
+    outputWelcome();
     std::cout << "\n\nInitialising board..." << std::endl;
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W); //Set the board Empty
     prev_dir_Y = 1;
@@ -867,6 +874,13 @@ int32_t main ()
                     case '\'': //Label mode
                         is_label_mode = !is_label_mode;
                         start_label_X = cursor_X;
+                        break;
+
+                    case '?': //Show welcome screen
+                        outputWelcome();
+                        std::cout << "\nPress any key to return." << std::endl;
+                        kbPause();
+                        getchar();
                         break;
                 }
                 if (pressed_ch >= 48 && pressed_ch <= 57) { //Power button
