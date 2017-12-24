@@ -215,7 +215,7 @@ void display ()
                     buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Pasted markers
-                else if ((x == paste_X && y == paste_Y) || (x == paste_X2 - 1 && y == paste_Y) || (x == paste_X && y == paste_Y2 - 1) || (x == paste_X2 - 1 && y == paste_Y2 - 1)) {
+                else if ((x == pasted_X && y == pasted_Y) || (x == pasted_X2 - 1 && y == pasted_Y) || (x == pasted_X && y == pasted_Y2 - 1) || (x == pasted_X2 - 1 && y == pasted_Y2 - 1)) {
                     buff = "\033[30;43m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Paste area

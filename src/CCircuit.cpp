@@ -243,7 +243,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
         copy_data->clear();
         is_data_to_paste = true;
         is_no_copy_source = true;
-        copy_X = copy_Y = copy_X2 = copy_Y2 = paste_X = paste_Y = paste_X2 = paste_Y2 = -1;
+        copy_X = copy_Y = copy_X2 = copy_Y2 = pasted_X = pasted_Y = pasted_X2 = pasted_Y2 = -1;
     } else {
         wipeBoard();
     }
@@ -339,6 +339,7 @@ void outputWelcome ()
               << "\n"+ wh("?") +"show this welcome screen"
               << std::endl
               << "\n"+ wh("xb") +"initiate/complete/discard selection, paste"
+              << "\n"+ wh("X") +"restore last cut/paste operation"
               << "\n"+ wh("BkKj") +"... paste unelectrified, move, swap, clear area"
               << "\n"+ wh("Jmw") +"... paste mask, paste x flip, paste y flip"
               << "\n\n- After initiating a selection, you can do a Save to export that component."
@@ -641,8 +642,8 @@ int32_t main ()
                                 copy_X = cursor_X++;
                                 copy_Y = cursor_Y++;
                               //'hide' last pasted
-                                paste_X = paste_X2 = -1;
-                                paste_Y = paste_Y2 = -1;
+                                pasted_X = pasted_X2 = -1;
+                                pasted_Y = pasted_Y2 = -1;
                             }
                         } else { //We were copying
                           //Perform the copy
@@ -678,6 +679,27 @@ int32_t main ()
                     case 'J': //Paste mask
                         if (is_data_to_paste) {
                             to_copy_cursor = true;
+                            uint16_t paste_X_end, paste_Y_end;
+                            paste_X_end = cursor_X + paste_X_dist;
+                            paste_Y_end = cursor_Y + paste_Y_dist;
+                          //Prepare for later restore
+                            bool can_restore_origin = !is_no_copy_source && (pressed_ch == 'k' || pressed_ch == 'K' || pressed_ch == 'j');
+                            bool can_restore_destin = (pressed_ch == 'b' || pressed_ch == 'B' || pressed_ch == 'm' || pressed_ch == 'k' || pressed_ch == 'K' || pressed_ch == 'J');
+                            if (can_restore_origin) {
+                                cloneVector(restore_origin_data, copy_data);
+                            } else {
+                                restore_origin_data->clear();
+                            }
+                            if (can_restore_destin) {
+                                for (uint16_t y = cursor_Y; y < paste_Y_end; ++y) {
+                                    for (uint16_t x = cursor_X; x < paste_X_end; ++x) {
+                                        restore_destin_data->push_back(board[x][y]);
+                                    }
+                                }
+                            } else {
+                                restore_destin_data->clear();
+                            }
+                          //Paste operations
                             if (!is_no_copy_source) {
                                 if (pressed_ch == 'k' || pressed_ch == 'j') { //Remove copied-from area (move/clear)?
                                     for (uint16_t x = copy_X; x < copy_X2; ++x) {
@@ -687,9 +709,6 @@ int32_t main ()
                                     }
                                 }
                             }
-                            uint16_t paste_X_end, paste_Y_end;
-                            paste_X_end = cursor_X + paste_X_dist;
-                            paste_Y_end = cursor_Y + paste_Y_dist;
                             if (pressed_ch != 'j') { //Paste copy data onto the board
                                 uint16_t i = 0;
                                 if (pressed_ch == 'K' && !is_no_copy_source) { //Swap
@@ -761,16 +780,39 @@ int32_t main ()
                                 is_data_to_paste = false;
                             }
                           //Set last pasted area markers
-                            paste_X  = cursor_X;
-                            paste_Y  = cursor_Y;
-                            paste_X2 = paste_X_end;
-                            paste_Y2 = paste_Y_end;
+                            pasted_X  = cursor_X;
+                            pasted_Y  = cursor_Y;
+                            pasted_X2 = paste_X_end;
+                            pasted_Y2 = paste_Y_end;
                           //Re-calculate the electrification area
                           //Use heuristic
-                            if (paste_X < elec_X) { elec_X = paste_X; }
-                            if (paste_X2 - 1 > elec_X2) { elec_X2 = paste_X2 - 1; }
-                            if (paste_Y < elec_Y) { elec_Y = paste_Y; }
-                            if (paste_Y2 - 1 > elec_Y2) { elec_Y2 = paste_Y2 - 1; }
+                            if (pasted_X < elec_X)       { elec_X = pasted_X; }
+                            if (pasted_X2 - 1 > elec_X2) { elec_X2 = pasted_X2 - 1; }
+                            if (pasted_Y < elec_Y)       { elec_Y = pasted_Y; }
+                            if (pasted_Y2 - 1 > elec_Y2) { elec_Y2 = pasted_Y2 - 1; }
+                        }
+                        break;
+
+                    case 'X': //Restore last cut/paste
+                        if (restore_origin_data->size()) {
+                            uint32_t i = 0;
+                            for (uint16_t y = copy_Y; y < copy_Y2; ++y) {
+                                for (uint16_t x = copy_X; x < copy_X2; ++x) {
+                                    board[x][y] = restore_origin_data->at(i);
+                                    ++i;
+                                }
+                            }
+                            restore_origin_data->clear();
+                        }
+                        if (restore_destin_data->size()) {
+                            uint32_t i = 0;
+                            for (uint16_t y = pasted_Y; y < pasted_Y2; ++y) {
+                                for (uint16_t x = pasted_X; x < pasted_X2; ++x) {
+                                    board[x][y] = restore_destin_data->at(i);
+                                    ++i;
+                                }
+                            }
+                            restore_destin_data->clear();
                         }
                         break;
 
@@ -952,5 +994,3 @@ int32_t main ()
     }
     return 0;
 }
-
-//std::cout << ": " + std::to_string() << std::endl;

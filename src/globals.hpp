@@ -81,8 +81,10 @@ extern uint16_t u;
 
 extern bool is_copying, is_data_to_paste;
 extern uint16_t copy_X, copy_Y, copy_X2, copy_Y2, paste_X_dist, paste_Y_dist;
-extern uint16_t paste_X, paste_Y, paste_X2, paste_Y2;
+extern uint16_t pasted_X, pasted_Y, pasted_X2, pasted_Y2;
 extern std::vector<char> *copy_data;
+extern std::vector<char> *restore_origin_data;
+extern std::vector<char> *restore_destin_data;
 extern bool is_no_copy_source;
 
 extern bool is_auto_bridge;
@@ -96,5 +98,8 @@ extern uint16_t screen_W;
 extern uint16_t screen_H;
 extern uint16_t screen_W_half;
 extern uint16_t screen_H_half;
+
+
+extern void cloneVector (std::vector<char>*, std::vector<char>*);
 
 #endif
