@@ -1,6 +1,6 @@
 #TODO
 * Move variables into local scope
-* Break into multiple .cpp & .hpp
+* Replace macro definitions with constant struct with display & storage information
 * Don't allow movement out of bounds when pasting
 * Make bikeyboardal
 * Ensure paste text fits on screen at all sizes
