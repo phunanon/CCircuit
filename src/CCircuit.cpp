@@ -1,16 +1,3 @@
-//TODO
-//Move variables into local scope
-//Break into multiple .cpp & .hpp
-//Don't allow movement out of bounds when pasting
-//Make bikeyboardal
-//Ensure paste text fits on screen at all sizes
-//Give clearer save success
-//Fix stretcher powered by diode from flank
-//Fix delay in some key presses
-//Implement autosave
-//Allow directory hopping when load/save autocomplete/project name
-//Implement copy-paste undo/restore
-//Implement smart far copy (jump to end of circuit)
 #include <iostream>     //For output to the terminal
 #include <stdio.h>      //For output to the terminal: getchar; system ()
 #include <string>       //For use of strings
