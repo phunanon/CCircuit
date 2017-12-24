@@ -321,8 +321,10 @@ int32_t main ()
     auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
   //Welcome screen
     auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t\t"; }; //Colour text to white on black
-    std::cout << "CCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n"
-              << "\nINSTRUCTIONS\n============"
+    auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t\t"; }; //Colour text to light red on black
+    auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t\t"; }; //Colour text to light blue on black
+    std::cout << rd("\nCCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n")
+              << bl("\nINSTRUCTIONS\n============")
               << "\n"+ wh("[space]") +"remove anything"
               << "\n"+ wh("[enter]") +"electrify cursor"
               << "\n"+ wh(".oeu") +"up, left, down, right"
@@ -344,7 +346,8 @@ int32_t main ()
               << "\n"+ wh("xbBkKjJmw") +"\b\b\b\b\b\b\b\binitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
               << "\n"+ wh("qQ") +"quit/no onexitsave quit"
               << "\n\nAfter initiating a selection, you can do a Save to export that component."
-              << "\n\nINFORMATION\n===========\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
+              << bl("\n\nINFORMATION\n===========")
+              << "\nElectronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << std::endl;
     std::cout << "\n\nInitialising board..." << std::endl;
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W); //Set the board Empty
