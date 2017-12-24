@@ -312,9 +312,9 @@ void loadBoard (std::string load_name, bool _is_component = false)
 
 void outputWelcome ()
 {
-    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t\t"; }; //Colour text to white on black
-    auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t\t"; }; //Colour text to light red on black
-    auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t\t"; }; //Colour text to light blue on black
+    auto wh = [](std::string text) { return " \033[0;37;40m"+ text +"\033[0m\t"; }; //Colour text to white on black
+    auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t"; }; //Colour text to light red on black
+    auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t"; }; //Colour text to light blue on black
     std::cout << rd("\nCCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n")
               << bl("\nINSTRUCTIONS\n============")
               << "\n"+ wh("[space]") +"remove anything"
@@ -335,9 +335,12 @@ void outputWelcome ()
               << "\n"+ wh("yYvV") +"load, save, import component, wipe board"
               << "\n"+ wh("'") +"toggle [lowercase] label mode"
               << "\n"+ wh("zZ") +"undo, redo"
-              << "\n"+ wh("xbBkKjJmw") +"\b\b\b\b\b\b\b\binitiate/complete/discard selection, paste, paste unelectrified, move, swap, clear area, paste mask, paste x flip, paste y flip"
               << "\n"+ wh("qQ") +"quit/no onexitsave quit"
               << "\n"+ wh("?") +"show this welcome screen"
+              << std::endl
+              << "\n"+ wh("xb") +"initiate/complete/discard selection, paste"
+              << "\n"+ wh("BkKj") +"... paste unelectrified, move, swap, clear area"
+              << "\n"+ wh("Jmw") +"... paste mask, paste x flip, paste y flip"
               << "\n\n- After initiating a selection, you can do a Save to export that component."
               << bl("\n\nINFORMATION\n===========")
               << "\n- Electronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
