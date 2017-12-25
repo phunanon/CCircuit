@@ -213,15 +213,15 @@ void display ()
             if (is_data_to_paste) {
               //Copy markers
                 if ((x == copy_X && y == copy_Y) || (x == copy_X2 - 1 && y == copy_Y) || (x == copy_X && y == copy_Y2 - 1) || (x == copy_X2 - 1 && y == copy_Y2 - 1)) {
-                    buff = "\033[30;46m" + buff.substr(buff.length() - 1, buff.length());
+                    buff = "\033[0;30;46m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Pasted markers
                 else if ((x == pasted_X && y == pasted_Y) || (x == pasted_X2 - 1 && y == pasted_Y) || (x == pasted_X && y == pasted_Y2 - 1) || (x == pasted_X2 - 1 && y == pasted_Y2 - 1)) {
-                    buff = "\033[30;43m" + buff.substr(buff.length() - 1, buff.length());
+                    buff = "\033[0;30;43m" + buff.substr(buff.length() - 1, buff.length());
                 }
               //Paste area
                 else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
-                    buff = "\033[30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
+                    buff = "\033[0;30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
                 }
                 prev_colour = "";
             }
