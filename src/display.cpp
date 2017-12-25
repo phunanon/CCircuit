@@ -60,23 +60,24 @@ void display ()
     uint16_t bar_off_len = 0;
     buffer += "\033[0;37;40m"; //bg of bar
     bar_off_len += 10;
-    buffer += std::to_string(cursor_X) + ", " + std::to_string(cursor_Y);
-    buffer += " ";
+    buffer += std::to_string(cursor_X) +", "+ std::to_string(cursor_Y) +"  ";
+    if (is_copying)       { buffer += std::to_string(cursor_X - copy_X) +"x"+ std::to_string(cursor_Y - copy_Y) +"  "; }
+    if (is_data_to_paste) { buffer += std::to_string(copy_X2 - copy_X) +"x"+ std::to_string(copy_Y2 - copy_Y) +"  "; }
     for (uint8_t i = 0; i < 10; ++i) {
         buffer += "\033[37;40m" + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placed_switches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
         bar_off_len += 16;
     }
     buffer += "\033[37;40m";
     bar_off_len += 8;
-    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "direct" : "genpurp") + " wire" : ""); 
-    buffer += (is_copying ? "  selecting (x complete)" : (is_data_to_paste ?
+    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "-|" : "#") : ""); 
+    buffer += (is_copying ? "  SELECT x:complete" : (is_data_to_paste ?
         (is_no_copy_source ?
-            "  ready (x dismiss, b paste, B unelec, m x-flip, w y-flip, J mask)" : "  ready (x dismiss, b paste, B unelec, k cut, K swap, j clear, m x-flip, w y-flip, J mask, Y save)")
+            "  PASTING x:dismiss b:paste B:unelec m:x-flip w:y-flip J:mask" : "  PASTING x:dismiss b:paste B:unelec k:cut K:swap j:clear m:x-flip w:y-flip J:mask Y:save")
         : ""));
-    buffer += (is_auto_bridge ? "  auto bridging" : "");
+    buffer += (is_auto_bridge ? "  auto bridge" : "");
     buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
     buffer += (is_paused ? "  paused" : "");
-    buffer += (is_label_mode ? "  label mode" : "");
+    buffer += (is_label_mode ? "  LABEL" : "");
     std::string space = "";
     uint16_t s_len = screen_W - (buffer.length() - bar_off_len) - proj_name.length();
     for (uint16_t i = 0; i < s_len; ++i) { space += " "; }
