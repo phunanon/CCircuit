@@ -391,8 +391,11 @@ void elec () //Electrify the board appropriately
                         alive += powerAtDir(line_west, y, WEST);
                         dead  += powerAtDir(line_east, y, EAST, true);
                         dead  += powerAtDir(line_west, y, WEST, true);
-                        if (alive && !dead && powerAtDir(x, y, NORTH)) {
-                            addBranch(x, y + 1, SOUTH);
+                        char above = board[x][y - 1];
+                        bool is_adapter_above = (above == UN_ADAPTER || above == PW_ADAPTER);
+                        bool is_powered = (is_adapter_above ? powerAtDir(x, y, SOUTH) : powerAtDir(x, y, NORTH));
+                        if (alive && !dead && is_powered) {
+                            if (is_adapter_above) { addBranch(x, y - 1, NORTH); } else { addBranch(x, y + 1, SOUTH); }
                             board[x][y] = PW_AND;
                         }
                     } else {
