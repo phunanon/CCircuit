@@ -1,4 +1,5 @@
 #TODO
+* Fix copy-paste restore
 * Move variables into local scope
 * Replace macro definitions with constant struct with display & storage information
 * swap autobridge and wire toggle keys
@@ -11,3 +12,5 @@
 * Implement autosave
 * Allow directory hopping when load/save autocomplete/project name
 * Implement smart far copy (jump to end of circuit)
+* Fix underlines in paste box
+* Make delay multi-directional
