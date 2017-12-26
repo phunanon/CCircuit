@@ -1,6 +1,8 @@
 #TODO
 * URGENT: Fix component load
 * MAJOR: Fix copy-paste restore
+* URGENT: Fix delay powered from NOT with adapter
+* URGENT: Fix stretch not powering through adapter
 * Move variables into local scope
 * Replace macro definitions with constant struct with display & storage information
 * make autobridge and wire toggle A, make h and H direct wire directions
