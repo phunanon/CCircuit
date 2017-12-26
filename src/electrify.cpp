@@ -100,14 +100,7 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
          || look == UN_BRIDGE || look == UN_LEAKYB      //
          || look == wire                                //
          || look == diode                               //
-         || (_dir == NORTH &&
-                           (  look == UN_BIT
-                           || look == UN_DELAY
-                           || look == UN_AND
-                           || look == UN_XOR
-                           || look == PW_NOT
-                           || look == U1_STRETCH
-                           || look == UN_ADAPTER))      // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
+         || (_dir == NORTH && (look == UN_ADAPTER || (!nextToAdapter(_X, _Y) && (look == UN_BIT || look == UN_DELAY || look == UN_AND || look == UN_XOR || look == PW_NOT || look == U1_STRETCH)))) // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
            ) { return true; }
         return false; //Anything else could never power us
     }
@@ -116,16 +109,7 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
         || look == wire                         //
         || look == PW_POWER                     //
         || look == diode                        // Powered by Wire/D Wire/Power/Diode
-        || (_dir == NORTH &&
-                          (  look == PW_DELAY
-                          || look == PW_BIT
-                          || look == PW_AND
-                          || look == PW_XOR
-                          || look == UN_NOT
-                          || look == P1_STRETCH
-                          || look == P2_STRETCH
-                          || look == P3_STRETCH
-                          || look == PW_ADAPTER)) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
+        || (_dir == NORTH && (look == PW_ADAPTER || (!nextToAdapter(_X, _Y) && (look == PW_DELAY || look == PW_BIT || look == PW_AND || look == PW_XOR || look == UN_NOT || look == P1_STRETCH || look == P2_STRETCH || look == P3_STRETCH)))) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
         || (is_power_present && is_powered);      // Power
 }
 
@@ -330,7 +314,7 @@ void elec () //Electrify the board appropriately
           //South
             if (can_V && *dir != NORTH && branch[b].y)  {
                 char *look = &board[branch[b].x][branch[b].y + 1];
-                if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH) { ++routes; can_south = true; }
+                if (*look == UN_WIRE || *look == UN_S_DIODE || *look == UN_BIT || *look == U1_STRETCH || *look == UN_DELAY) { ++routes; can_south = true; }
                 else if (*look == UN_V_WIRE)                    { ++routes; can_south = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_south = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_south = true; *look = PW_LEAKYB; }
@@ -469,12 +453,12 @@ void elec () //Electrify the board appropriately
                 }
                 case P1_STRETCH: //
                 case P2_STRETCH: //
-                case P3_STRETCH: // Powered Stretcher
+                case P3_STRETCH: //Powered Stretcher
                   //Check if we should be unpowered
-                    if (!powerAtDir(x, y, NORTH)) {
+                    if (!powerAtDir(x, y, NORTH) || powerAtDir(x, y, NORTH, true)) {
                         --board[x][y];
                     }
-                    if (board[x][y] > P1_STRETCH) {
+                    if (board[x][y] >= P1_STRETCH) {
                         powerAdapter(x, y);
                     }
                     break;

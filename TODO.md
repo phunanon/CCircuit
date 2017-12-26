@@ -1,6 +1,5 @@
 ##URGENT
 * Fix component load
-* Fix Delay powered from NOT with adapter
 
 ##MAJOR
 * Fix copy-paste restore

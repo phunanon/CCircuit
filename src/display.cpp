@@ -31,7 +31,7 @@ const std::string display_colour[] = {
     "30;47", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42", "37;43", "1;37;43", "37;41",         //0-9
     "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44", //10-19
     "1;30;40", "1;30;40", "1;30;47", "1;37;44", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42",   //20-29
-    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "" //30-38
+    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", ""              //30-38
 };
 
 bool to_crosshairs = false;
@@ -96,15 +96,20 @@ void display ()
 
             auto adapterColour = [x, y](char adapter) {
                 char look;
+                uint8_t adapters = 0;
+                std::string colour;
+                auto isAdaptable = [&adapters, &colour] (char look) {
+                    if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR || look == UN_DELAY || look == PW_DELAY || (look >= U1_STRETCH && look <= P3_STRETCH)) { ++adapters; colour = display_colour[look]; }
+                };
                 look = board[x][y - 1];
-                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                isAdaptable(look);
                 look = board[x + 1][y];
-                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                isAdaptable(look);
                 look = board[x][y + 1];
-                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
+                isAdaptable(look);
                 look = board[x - 1][y];
-                if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR) { return display_colour[look]; }
-                return display_colour[adapter];
+                isAdaptable(look);
+                return (adapters == 1 ? colour : display_colour[adapter]);
             };
 
             switch (*look) {
