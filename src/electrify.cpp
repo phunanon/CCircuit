@@ -43,6 +43,19 @@ void elecReCalculate ()
 
 
 
+uint8_t nextToAdapter (uint16_t _X, uint16_t _Y)
+{
+    char look;
+    look = board[_X][_Y - 1];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { return NORTH; }
+    look = board[_X + 1][_Y];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { return EAST; }
+    look = board[_X - 1][_Y];
+    if (look == UN_ADAPTER || look == PW_ADAPTER) { return WEST; }
+    return NODIR;
+}
+
+
 bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
 {
     if (_X < 0 || _Y < 0 || _X >= board_W || _Y >= board_H) { return false; }
@@ -119,17 +132,8 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
 
 uint8_t nextToLives (uint16_t _X, uint16_t _Y, bool _false_on_dead = false)
 {
-    auto nextToAdapter = [](uint16_t _X, uint16_t _Y) {
-        char look;
-        look = board[_X][_Y - 1];
-        if (look == UN_ADAPTER || look == PW_ADAPTER) { return NORTH; }
-        look = board[_X + 1][_Y];
-        if (look == UN_ADAPTER || look == PW_ADAPTER) { return EAST; }
-        look = board[_X - 1][_Y];
-        if (look == UN_ADAPTER || look == PW_ADAPTER) { return WEST; }
-        return SOUTH;
-    };
     uint8_t ignore_dir = nextToAdapter(_X, _Y);
+    if (!ignore_dir) { ignore_dir = SOUTH; }
     uint8_t lives = 0;
   //Check North
     if (ignore_dir != NORTH) {
@@ -288,11 +292,12 @@ void elec () //Electrify the board appropriately
                 *look = PW_BIT;
                 continue;
             }
-            else if (*look >= U1_STRETCH && *look <= P3_STRETCH) { //Upon a Stretcher, go South
+            else if (*look >= U1_STRETCH && *look <= P3_STRETCH) { //Upon a Stretcher, instantly continue
+                if (*look == U1_STRETCH ) {
+                    powerAdapter(branch[b].x, branch[b].y);
+                    --b;
+                }
                 *look = P3_STRETCH; //Electrify
-                ++branch[b].y;
-                *dir = SOUTH; //Reset prev_dir
-                --b;
                 continue;
             }
 
