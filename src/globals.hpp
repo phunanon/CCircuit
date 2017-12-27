@@ -49,7 +49,9 @@
 #define P3_STRETCH  35
 #define UN_DELAY    36
 #define PW_DELAY    37
-#define NOTHING     38
+#define UN_DISPLAY  38
+#define PW_DISPLAY  39
+#define NOTHING     40
 
 const uint16_t board_W = 4096;
 const uint16_t board_H = 4096;

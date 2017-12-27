@@ -172,6 +172,8 @@ void saveBoard (std::string save_name, bool _is_component = false)
             switch (board[x][y]) {
                 case EMPTY:                          save_data += ' '; break;
                 case UN_WIRE: case PW_WIRE:          save_data += '#'; break;
+                case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
+                case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
                 case UN_AND: case PW_AND:            save_data += 'A'; break;
                 case UN_NOT: case PW_NOT:            save_data += 'N'; break;
                 case UN_XOR: case PW_XOR:            save_data += 'X'; break;
@@ -184,12 +186,11 @@ void saveBoard (std::string save_name, bool _is_component = false)
                 case UN_N_DIODE: case PW_N_DIODE:    save_data += '^'; break;
                 case UN_E_DIODE: case PW_E_DIODE:    save_data += '>'; break;
                 case UN_S_DIODE: case PW_S_DIODE:    save_data += 'V'; break;
+                case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
                 case UN_DELAY: case PW_DELAY:        save_data += '%'; break;
                 case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
+                case UN_DISPLAY: case PW_DISPLAY:    save_data += 'D'; break;
                 case UN_ADAPTER: case PW_ADAPTER:    save_data += 'O'; break;
-                case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
-                case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
-                case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
             }
             if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
                 save_data += board[x][y] - 2;
@@ -261,6 +262,8 @@ void loadBoard (std::string load_name, bool _is_component = false)
                 {
                     case ' ': break; //Empty
                     case '#': load_char = UN_WIRE;    break;
+                    case '-': load_char = UN_H_WIRE;  break;
+                    case '|': load_char = UN_V_WIRE;  break;
                     case 'A': load_char = UN_AND;     break;
                     case 'N': load_char = UN_NOT;     break;
                     case 'X': load_char = UN_XOR;     break;
@@ -274,11 +277,10 @@ void loadBoard (std::string load_name, bool _is_component = false)
                     case '^': load_char = UN_N_DIODE; break;
                     case '%': load_char = UN_DELAY;   break;
                     case '$': load_char = U1_STRETCH; break;
+                    case 'D': load_char = UN_DISPLAY; break;
                     case 'O': load_char = UN_ADAPTER; break;
                     case '>': load_char = UN_E_DIODE; break;
                     case '<': load_char = UN_W_DIODE; break;
-                    case '-': load_char = UN_H_WIRE;  break;
-                    case '|': load_char = UN_V_WIRE;  break;
                 }
                 if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
                 {
@@ -328,8 +330,8 @@ void outputWelcome ()
               << "\n"+ wh("0-9") +"place/toggle switch"
               << "\n"+ wh("gcGC") +"North/South/West/East diodes"
               << "\n"+ wh("rRl") +"bridge, leaky bridge, power"
-              << "\n"+ wh("dDtnsb") +"delay, stretcher, AND, NOT, XOR, bit"
-              << "\n"+ wh("-") +"component adapter"
+              << "\n"+ wh("tns-") +"AND, NOT, XOR, adapter"
+              << "\n"+ wh("dDSb") +"delay, display, stretcher, bit"
               << "\n"+ wh("PpiI") +"pause, next, slow-motion, fast-motion"
               << "\n"+ wh(";:") +"wall, conductive wall"
               << "\n"+ wh("yYvV") +"load, save, import component, wipe board"
@@ -604,8 +606,13 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'D': //Stretcher
+                    case 'S': //Stretcher
                         *look = U1_STRETCH;
+                        to_move = true;
+                        break;
+
+                    case 'D': //Display
+                        *look = UN_DISPLAY;
                         to_move = true;
                         break;
 

@@ -208,7 +208,7 @@ void elec () //Electrify the board appropriately
         for (uint16_t b = 0; b < branches; ++b) {
             
             char *look = &board[branch[b].x][branch[b].y];
-            if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_DELAY || *look == PW_DELAY || *look == UN_WALL || *look == PW_BIT) { continue; }
+            if (*look == EMPTY || *look == UN_AND || *look == PW_AND|| *look == UN_NOT || *look == PW_NOT || *look == UN_XOR || *look == PW_XOR || *look == UN_DELAY || *look == PW_DELAY || *look == UN_WALL || *look == PW_BIT || *look == UN_DISPLAY || *look == PW_DISPLAY) { continue; }
             uint8_t *dir = &branch[b].d;
             bool is_bridge = (*look == UN_BRIDGE || *look == PW_BRIDGE || *look == UN_LEAKYB || *look == PW_LEAKYB);
             if (*look == UN_BIT && (*dir == EAST || *dir == WEST)) { continue; } //Stop at Unpowered Bit
@@ -353,7 +353,7 @@ void elec () //Electrify the board appropriately
     branches = 0;
   //Components
     for (uint16_t x = elec_X; x <= elec_X2; ++x) {
-        for (uint16_t y = elec_Y2; y >= elec_Y; --y) { //Evaluate upwards, so recently changed components aren't re-evaluated
+        for (uint16_t y = elec_Y2; y >= elec_Y; --y) {  //Evaluate NORTH, so recently changed components aren't re-evaluated
             switch (board[x][y]) {
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
@@ -461,6 +461,41 @@ void elec () //Electrify the board appropriately
                     if (board[x][y] >= P1_STRETCH) {
                         powerAdapter(x, y);
                     }
+                    break;
+                case UN_DISPLAY: //Display
+                case PW_DISPLAY: //Powered Display
+                {
+                    bool did_scroll = false;
+                  //Check if we should scroll (from WEST flank)
+                    uint16_t tx = x;
+                    while (board[tx][y] == UN_DISPLAY || board[tx][y] == PW_DISPLAY) {
+                        --tx;
+                    }
+                    if (powerAtDir(tx + 1, y, WEST)) {
+                        did_scroll = true;
+                        if (board[x - 1][y] == UN_DISPLAY) {
+                            board[x - 1][y] = board[x][y];
+                        } else {
+                            board[x][y] = UN_DISPLAY;
+                        }
+                    }
+                  //Check if we should be powered (from NORTH and EAST flank)
+                    //Seek vert NORTH across a potential line of Display
+                    uint16_t ty = y;
+                    while (board[x][ty] == UN_DISPLAY || board[x][ty] == PW_DISPLAY) {
+                        --ty;
+                    }
+                    //Seek horz EAST across a potential line of Display
+                    tx = x;
+                    while (board[tx][y] == UN_DISPLAY || board[tx][y] == PW_DISPLAY) {
+                        ++tx;
+                    }
+                    if (powerAtDir(x, ty + 1, NORTH) && powerAtDir(tx - 1, y, EAST)) {
+                        board[x][y] = PW_DISPLAY;
+                    } else if (did_scroll) {
+                        board[x][y] = UN_DISPLAY;
+                    }
+                }
                     break;
                 default:
                   //Switches
