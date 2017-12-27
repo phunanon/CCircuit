@@ -1,5 +1,5 @@
 # CCircuit
-###Linux C++ Terminal Basic Circuit Simulator
+### Linux C++ Terminal Basic Circuit Simulator
 
 This is a simple circuit simulator, including building blocks such as wire, bridge, AND/XOR/NOT, flip-flops, timers, copy-paste, undo-redo, and more.
 An old preview of an old creation can be seen here: https://youtu.be/sYgxDcVWrM8
