@@ -990,6 +990,7 @@ int32_t main ()
         }
       //Sleep
         clock += std::chrono::milliseconds(100);
+        if (clock + std::chrono::seconds(1) < std::chrono::system_clock::now()) { clock = std::chrono::system_clock::now(); }
         std::this_thread::sleep_until(clock);
     }
     return 0;
