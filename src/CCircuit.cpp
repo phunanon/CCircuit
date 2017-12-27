@@ -314,7 +314,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
 
 void outputWelcome ()
 {
-    auto wh = [](std::string text) { return " \033[0;37;40m"+ text +"\033[0m\t"; }; //Colour text to white on black
+    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t"; }; //Colour text to white on black
     auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t"; }; //Colour text to light red on black
     auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t"; }; //Colour text to light blue on black
     std::cout << rd("\nCCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n")
