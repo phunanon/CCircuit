@@ -355,6 +355,8 @@ void elec () //Electrify the board appropriately
     for (uint16_t x = elec_X; x <= elec_X2; ++x) {
         for (uint16_t y = elec_Y2; y >= elec_Y; --y) {  //Evaluate NORTH, so recently changed components aren't re-evaluated
             switch (board[x][y]) {
+                case EMPTY: //Empty
+                    continue;
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                 {
