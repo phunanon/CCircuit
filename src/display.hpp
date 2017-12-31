@@ -9,6 +9,7 @@
 #include "globals.hpp"
 
 extern bool to_crosshairs;
+extern bool to_hide_UI;
 void display ();
 
 #endif

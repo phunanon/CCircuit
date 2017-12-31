@@ -330,7 +330,7 @@ void outputWelcome ()
               << "\n"+ wh("hH") +"place wire, toggle auto-bridge for wires and diodes"
               << "\n"+ wh("a") +"toggle general use wire/directional wire"
               << "\n"+ wh("L") +"far lay under cursor"
-              << "\n"+ wh("fF") +"crosshairs, go-to coord"
+              << "\n"+ wh("fF") +"crosshairs/hide UI, go-to coord"
               << "\n"+ wh("0-9") +"place/toggle switch"
               << "\n"+ wh("gcGC") +"North/South/West/East diodes"
               << "\n"+ wh("rRl_") +"bridge, leaky bridge, power, random"
@@ -911,7 +911,9 @@ int32_t main ()
                         break;
 
                     case 'f': //Crosshairs
-                        to_crosshairs = !to_crosshairs;
+                        if (to_crosshairs && to_hide_UI) { to_crosshairs = to_hide_UI = false; break; }
+                        if (to_crosshairs) { to_hide_UI = true; break; }
+                        to_crosshairs = true;
                         break;
 
                     case 'p': //Next elec

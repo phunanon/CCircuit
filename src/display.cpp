@@ -1,5 +1,9 @@
 #include "display.hpp"
 
+bool to_crosshairs = false;
+bool to_hide_UI = false;
+
+
 void clearScreen () { std::cout << "\033[2J\033[1;1H"; }
 
 std::pair<uint16_t, uint16_t> getTerminalDimensions ()
@@ -27,6 +31,8 @@ void resizeScreen ()
     screen_H_half = screen_H / 2;
 }
 
+
+
 const std::string display_colour[] = {
     "30;47", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42", "37;43", "1;37;43", "37;41",                 //0-9
     "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44",         //10-19
@@ -36,7 +42,8 @@ const std::string display_colour[] = {
     "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47"//50-59
 };
 
-bool to_crosshairs = false;
+
+
 void display ()
 {
     resizeScreen();
@@ -59,38 +66,42 @@ void display ()
     buffer = "";
     clearScreen();
   //Top bar
-    uint16_t bar_off_len = 0;
-    buffer += "\033[0;37;40m"; //bg of bar
-    bar_off_len += 10;
-    buffer += std::to_string(cursor_X) +", "+ std::to_string(cursor_Y) +"  ";
-    if (is_copying)       { buffer += std::to_string(cursor_X - copy_X) +"x"+ std::to_string(cursor_Y - copy_Y) +"  "; }
-    if (is_data_to_paste) { buffer += std::to_string(copy_X2 - copy_X) +"x"+ std::to_string(copy_Y2 - copy_Y) +"  "; }
-    for (uint8_t i = 0; i < 10; ++i) {
-        buffer += "\033[37;40m" + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placed_switches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
-        bar_off_len += 16;
+    if (!to_hide_UI) {
+        uint16_t bar_off_len = 0;
+        buffer += "\033[0;37;40m"; //bg of bar
+        bar_off_len += 10;
+        buffer += std::to_string(cursor_X) +", "+ std::to_string(cursor_Y) +"  ";
+        if (is_copying)       { buffer += std::to_string(cursor_X - copy_X) +"x"+ std::to_string(cursor_Y - copy_Y) +"  "; }
+        if (is_data_to_paste) { buffer += std::to_string(copy_X2 - copy_X) +"x"+ std::to_string(copy_Y2 - copy_Y) +"  "; }
+        for (uint8_t i = 0; i < 10; ++i) {
+            buffer += "\033[37;40m" + (switches[i] ? "\033[30;42m" + std::to_string(i) : (placed_switches[i] ? "\033[30;43m" + std::to_string(i) : "\033[37;40m" + std::to_string(i)));
+            bar_off_len += 16;
+        }
+        buffer += "\033[37;40m";
+        bar_off_len += 8;
+        buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "-|" : "#") : ""); 
+        buffer += (is_copying ? "  SELECT x:complete" : (is_data_to_paste ?
+            (is_no_copy_source ?
+                "  PASTING x:dismiss b:paste B:unelec m:x-flip w:y-flip J:mask" : "  PASTING x:dismiss b:paste B:unelec k:cut K:swap j:clear m:x-flip w:y-flip J:mask Y:save")
+            : ""));
+        buffer += (is_auto_bridge ? "  auto bridge" : "");
+        buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
+        buffer += (is_paused ? "  paused" : "");
+        buffer += (is_label_mode ? "  LABEL" : "");
+        std::string space = "";
+        uint16_t s_len = screen_W - (buffer.length() - bar_off_len) - proj_name.length();
+        for (uint16_t i = 0; i < s_len; ++i) { space += " "; }
+        buffer += space + "\033[1;4m" + proj_name + "\033[0m";
+        buffer += '\n';
+    } else {
+        ++board_crop_Y2;
     }
-    buffer += "\033[37;40m";
-    bar_off_len += 8;
-    buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "-|" : "#") : ""); 
-    buffer += (is_copying ? "  SELECT x:complete" : (is_data_to_paste ?
-        (is_no_copy_source ?
-            "  PASTING x:dismiss b:paste B:unelec m:x-flip w:y-flip J:mask" : "  PASTING x:dismiss b:paste B:unelec k:cut K:swap j:clear m:x-flip w:y-flip J:mask Y:save")
-        : ""));
-    buffer += (is_auto_bridge ? "  auto bridge" : "");
-    buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
-    buffer += (is_paused ? "  paused" : "");
-    buffer += (is_label_mode ? "  LABEL" : "");
-    std::string space = "";
-    uint16_t s_len = screen_W - (buffer.length() - bar_off_len) - proj_name.length();
-    for (uint16_t i = 0; i < s_len; ++i) { space += " "; }
-    buffer += space + "\033[1;4m" + proj_name + "\033[0m";
   //Board
     uint16_t sx, sy;
     std::string prev_colour = "";
     for (uint16_t y = board_crop_Y, sy = 0; y < board_crop_Y2; ++y, ++sy) {
-        buffer += '\n';
+        if (sy) { buffer += '\n'; }
         for (uint16_t x = board_crop_X, sx = 0; x < board_crop_X2; ++x, ++sx) {
-        
             buff = " ";
             char *look = &board[x][y];
             std::string colour = "\033[0;";
@@ -220,33 +231,35 @@ void display ()
                 prev_colour = "";
             }
 
-            if (is_copying) { //Copy box
-                if (y == copy_Y - 1 && x >= copy_X - 1 && x <= cursor_X)    { buff = "\033[1;30;46mx"; } //North
-                if (x == cursor_X && y >= copy_Y - 1 && y <= cursor_Y)      { buff = "\033[1;30;46mx"; } //East
-                if (y == cursor_Y && x >= copy_X - 1 && x <= cursor_X)      { buff = "\033[1;30;46mx"; } //South
-                if (x == copy_X - 1 && y >= copy_Y - 1 && y <= cursor_Y)    { buff = "\033[1;30;46mx"; } //West
-                prev_colour = "";
-            }
-            if (is_data_to_paste) {
-              //Copy markers
-                if ((x == copy_X && y == copy_Y) || (x == copy_X2 - 1 && y == copy_Y) || (x == copy_X && y == copy_Y2 - 1) || (x == copy_X2 - 1 && y == copy_Y2 - 1)) {
-                    buff = "\033[0;30;46m" + buff.substr(buff.length() - 1, buff.length());
+            if (!to_hide_UI) {
+                if (is_copying) { //Copy box
+                    if (y == copy_Y - 1 && x >= copy_X - 1 && x <= cursor_X)    { buff = "\033[1;30;46mx"; } //North
+                    if (x == cursor_X && y >= copy_Y - 1 && y <= cursor_Y)      { buff = "\033[1;30;46mx"; } //East
+                    if (y == cursor_Y && x >= copy_X - 1 && x <= cursor_X)      { buff = "\033[1;30;46mx"; } //South
+                    if (x == copy_X - 1 && y >= copy_Y - 1 && y <= cursor_Y)    { buff = "\033[1;30;46mx"; } //West
+                    prev_colour = "";
                 }
-              //Pasted markers
-                else if ((x == pasted_X && y == pasted_Y) || (x == pasted_X2 - 1 && y == pasted_Y) || (x == pasted_X && y == pasted_Y2 - 1) || (x == pasted_X2 - 1 && y == pasted_Y2 - 1)) {
-                    buff = "\033[0;30;43m" + buff.substr(buff.length() - 1, buff.length());
+                if (is_data_to_paste) {
+                  //Copy markers
+                    if ((x == copy_X && y == copy_Y) || (x == copy_X2 - 1 && y == copy_Y) || (x == copy_X && y == copy_Y2 - 1) || (x == copy_X2 - 1 && y == copy_Y2 - 1)) {
+                        buff = "\033[0;30;46m" + buff.substr(buff.length() - 1, buff.length());
+                    }
+                  //Pasted markers
+                    else if ((x == pasted_X && y == pasted_Y) || (x == pasted_X2 - 1 && y == pasted_Y) || (x == pasted_X && y == pasted_Y2 - 1) || (x == pasted_X2 - 1 && y == pasted_Y2 - 1)) {
+                        buff = "\033[0;30;43m" + buff.substr(buff.length() - 1, buff.length());
+                    }
+                  //Paste area
+                    else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
+                        buff = "\033[0;30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
+                    }
+                    prev_colour = "";
                 }
-              //Paste area
-                else if (x >= cursor_X && x < cursor_X + paste_X_dist && y >= cursor_Y && y < cursor_Y + paste_Y_dist) {
-                    buff = "\033[0;30;4"+ std::string(to_copy_cursor ? "0" : "6") +"m" + buff.substr(buff.length() - 1, buff.length());
+              //Crosshairs and cursor
+                if ((to_crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
+                    buff = buff.substr(buff.length() - 1, buff.length());
+                    buff = "\033[0;37;4" + std::string(is_data_to_paste ? (to_copy_cursor ? "0" : "6") : (to_elec_cursor ? "4" : "0")) + "m" + buff;
+                    prev_colour = "";
                 }
-                prev_colour = "";
-            }
-          //Crosshairs and cursor
-            if ((to_crosshairs && (x == cursor_X || y == cursor_Y)) || (x == cursor_X && y == cursor_Y) || (x == cursor_X && sy == 0) || (x == cursor_X && sy == screen_H - 1) || (sx == 0 && y == cursor_Y) || (sx == screen_W - 1 && y == cursor_Y)) {
-                buff = buff.substr(buff.length() - 1, buff.length());
-                buff = "\033[0;37;4" + std::string(is_data_to_paste ? (to_copy_cursor ? "0" : "6") : (to_elec_cursor ? "4" : "0")) + "m" + buff;
-                prev_colour = "";
             }
 
             buffer += buff;
