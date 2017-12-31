@@ -32,7 +32,8 @@ const std::string display_colour[] = {
     "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44",         //10-19
     "1;30;40", "1;30;40", "1;30;47", "1;37;44", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42",           //20-29
     "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "1;30;40", "1;34;44",   //30-39
-    "1;37;44", ""                                                                                               //40-41
+    "1;37;44", "", "", "", "", "", "", "", "", "",                                                              //40-49
+    "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47"//50-59
 };
 
 bool to_crosshairs = false;
@@ -100,7 +101,7 @@ void display ()
                 uint8_t adapters = 0;
                 std::string colour;
                 auto isAdaptable = [&adapters, &colour] (char look) {
-                    if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR || look == UN_DELAY || look == PW_DELAY || (look >= U1_STRETCH && look <= P3_STRETCH)) { ++adapters; colour = display_colour[look]; }
+                    if (look == UN_AND || look == UN_NOT || look == UN_XOR || look == PW_AND || look == PW_NOT || look == PW_XOR || look == UN_DELAY || look == PW_DELAY || look == R_RANDOM || look == PW_POWER || (look >= 50 && look <= 59) || (look >= U1_STRETCH && look <= P3_STRETCH)) { ++adapters; colour = display_colour[look]; }
                 };
                 look = board[x][y - 1];
                 isAdaptable(look);

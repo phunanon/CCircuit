@@ -85,31 +85,32 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
     }
     if (board[_X][_Y+1] == PW_LEAKYB && _dir == NORTH) { return !_is_dead; }
     look = board[_X][_Y];
+    bool is_next_to_adapter = nextToAdapter(_X, _Y);
     bool is_power_present = false, is_powered = false;
     if (look >= 50 && look <= 59) {
         is_power_present = true;
-        is_powered = switches[look - 50];
+        is_powered = switches[look - 50] && !is_next_to_adapter;
     }
   //Return for if checking for dead
     if (_is_dead) {
         --diode;
         --wire;
         if (is_power_present) { return !is_powered; }  //There's a Switch
-        if (look == PW_POWER) { return false; }       //There's a Power
+        if (look == PW_POWER && !is_next_to_adapter) { return false; } //There's a Power
         if (look == UN_WIRE                             //
          || look == UN_BRIDGE || look == UN_LEAKYB      //
          || look == wire                                //
          || look == diode                               //
-         || (_dir == NORTH && (look == UN_ADAPTER || (!nextToAdapter(_X, _Y) && (look == UN_BIT || look == UN_DELAY || look == UN_AND || look == UN_XOR || look == PW_NOT || look == U1_STRETCH)))) // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
+         || (_dir == NORTH && (look == UN_ADAPTER || (!is_next_to_adapter && (look == UN_BIT || look == UN_DELAY || look == UN_AND || look == UN_XOR || look == PW_NOT || look == U1_STRETCH)))) // There's a dead Wire/Bridge/LeakyB/D Wire/Diode/Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
            ) { return true; }
         return false; //Anything else could never power us
     }
   //Return for if checking for alive
-    return look == PW_WIRE                     //
-        || look == wire                         //
-        || look == PW_POWER                     //
-        || look == diode                        // Powered by Wire/D Wire/Power/Diode
-        || (_dir == NORTH && (look == PW_ADAPTER || (!nextToAdapter(_X, _Y) && (look == PW_DELAY || look == PW_BIT || look == PW_AND || look == PW_XOR || look == UN_NOT || look == P1_STRETCH || look == P2_STRETCH || look == P3_STRETCH)))) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
+    return look == PW_WIRE                          //
+        || look == wire                              //
+        || (look == PW_POWER && !is_next_to_adapter) //
+        || look == diode                             // Powered by Wire/D Wire/Power/Diode
+        || (_dir == NORTH && (look == PW_ADAPTER || (!is_next_to_adapter && (look == PW_DELAY || look == PW_BIT || look == PW_AND || look == PW_XOR || look == UN_NOT || look == P1_STRETCH || look == P2_STRETCH || look == P3_STRETCH)))) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
         || (is_power_present && is_powered);      // Power
 }
 
@@ -160,7 +161,7 @@ uint16_t addBranch (uint16_t _X, uint16_t _Y, uint8_t prev_dir)
     return branches++;
 }
 
-void powerAdapter (uint16_t _X, uint16_t _Y)
+void powerAdapter (uint16_t _X, uint16_t _Y, uint8_t _default_DIR = SOUTH)
 {
     bool is_found = false;
     char look;
@@ -172,7 +173,15 @@ void powerAdapter (uint16_t _X, uint16_t _Y)
     if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X, _Y + 1, SOUTH); is_found = true; }
     look = board[_X - 1][_Y];
     if (look == UN_ADAPTER || look == PW_ADAPTER) { addBranch(_X - 1, _Y, WEST);  is_found = true; }
-    if (!is_found) { addBranch(_X, _Y + 1, SOUTH); }
+    if (!is_found) {
+        switch (_default_DIR) {
+            case NODIR: addBranch(_X, _Y, NODIR);     break;
+            case NORTH: addBranch(_X, _Y - 1, NORTH); break;
+            case EAST:  addBranch(_X + 1, _Y, EAST);  break;
+            case SOUTH: addBranch(_X, _Y + 1, SOUTH); break;
+            case WEST:  addBranch(_X - 1, _Y, WEST);  break;
+        }
+    }
 }
 
 uint16_t next_branch;
@@ -427,7 +436,7 @@ void elec () //Electrify the board appropriately
                 case R_RANDOM:
                     if (rand() % 2) { break; }
                 case PW_POWER: //Power
-                    addBranch(x, y, NODIR);
+                    powerAdapter(x, y, NODIR);
                     break;
                 case PW_BIT: //Powered Bit
                 {
@@ -505,7 +514,7 @@ void elec () //Electrify the board appropriately
                   //Switches
                     if (board[x][y] >= 50 && board[x][y] <= 59) {
                         if (switches[board[x][y] - 50]) {
-                            addBranch(x, y, NODIR);
+                            powerAdapter(x, y, NODIR);
                         }
                     }
                     break;
