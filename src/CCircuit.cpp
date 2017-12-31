@@ -395,7 +395,6 @@ int32_t main ()
             pressed_ch = getchar(); //Get the key
             if (is_label_mode && pressed_ch >= 97 && pressed_ch <= 122) { //Was this a label (and lowercase)?
                 *look = pressed_ch;
-                if (cursor_X + 1 < elec_W) { ++cursor_X; }
                 prev_dir_Y = prev_dir_X = 0;
                 prev_dir_X = 1;
             } else {
@@ -975,13 +974,9 @@ int32_t main ()
                     else if (cursor_Y > elec_Y2) { elec_Y2 = cursor_Y; }
                 }
             }
-            if (to_move) { //We placed something, so lets move out of the way
-                if (is_label_mode) {
-                    ++cursor_X;
-                } else {
-                    cursor_X += prev_dir_X;
-                    cursor_Y += prev_dir_Y;
-                }
+            if (to_move || is_label_mode) { //We placed something, so lets move out of the way
+                cursor_X += prev_dir_X;
+                cursor_Y += prev_dir_Y;
                 //This was probably an action requiring an undo, so let's record it
                 undos[u][0] = prev_X;
                 undos[u][1] = prev_Y;

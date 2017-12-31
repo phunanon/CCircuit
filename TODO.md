@@ -2,15 +2,14 @@
 * Fix copy-paste restore
 
 ##MAJOR
-
+* Fix save overwrite when remove operation is delayed
 
 ##MINOR
 * Fix Stretcher powered by diode from flank
 * Fix delay in some key presses
-* Add label making to undo history
 
 ##TODO
-* Make Switches adaptable (+ change their handling to an actual UN/PW component)
+* Make Switches fully adaptable (+ change their handling to an actual UN/PW component)
 * Move variables into local scope
 * Replace macro definitions with constant struct with display & storage information
 * Make autobridge and wire toggle A, make h and H direct wire directions
