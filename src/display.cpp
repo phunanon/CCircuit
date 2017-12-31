@@ -31,8 +31,8 @@ const std::string display_colour[] = {
     "30;47", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42", "37;43", "1;37;43", "37;41",                 //0-9
     "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44",         //10-19
     "1;30;40", "1;30;40", "1;30;47", "1;37;44", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42",           //20-29
-    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "1;30;40", "1;34;44"    //30-39
-    ""                                                                                                          //40
+    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "1;30;40", "1;34;44",   //30-39
+    "1;37;44", ""                                                                                               //40-41
 };
 
 bool to_crosshairs = false;
@@ -121,6 +121,14 @@ void display ()
                 case PW_WIRE: //Powered Wire
                     buff = "#";
                     break;
+                case UN_H_WIRE: //Horizontal Wire
+                case PW_H_WIRE: //Powered Horizontal Wire
+                    buff = "-";
+                    break;
+                case UN_V_WIRE: //Vertical Wire
+                case PW_V_WIRE: //Powered Vertical Wire
+                    buff = "|";
+                    break;
                 case UN_AND: //AND
                 case PW_AND: //Powered AND
                     buff = "A";
@@ -189,13 +197,8 @@ void display ()
                 case PW_DISPLAY: //Powered Display
                     buff = " ";
                     break;
-                case UN_H_WIRE: //Horizontal Wire
-                case PW_H_WIRE: //Powered Horizontal Wire
-                    buff = "-";
-                    break;
-                case UN_V_WIRE: //Vertical Wire
-                case PW_V_WIRE: //Powered Vertical Wire
-                    buff = "|";
+                case R_RANDOM:
+                    buff = "R";
                     break;
             }
 
@@ -204,7 +207,7 @@ void display ()
             if (prev_colour != colour) { buff = colour + buff; }
             prev_colour = colour;
             
-            if (*look >= 50 && *look <= 59) { //Power
+            if (*look >= 50 && *look <= 59) { //Switch
                 switch_num = *look - 50;
                 buff = (switches[switch_num] ? "\033[1;33;44m" + std::to_string(switch_num) : "\033[1;31;47m" + std::to_string(switch_num)) ; //Power switch
                 prev_colour = "";

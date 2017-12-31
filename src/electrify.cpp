@@ -424,6 +424,8 @@ void elec () //Electrify the board appropriately
                         board[x][y] = UN_DELAY;
                     }
                     break;
+                case R_RANDOM:
+                    if (rand() % 2) { break; }
                 case PW_POWER: //Power
                     addBranch(x, y, NODIR);
                     break;

@@ -170,28 +170,29 @@ void saveBoard (std::string save_name, bool _is_component = false)
     for (uint16_t y = y1; y <= y2; ++y) {
         for (uint16_t x = x1; x <= x2; ++x) {
             switch (board[x][y]) {
-                case EMPTY:                          save_data += ' '; break;
-                case UN_WIRE: case PW_WIRE:          save_data += '#'; break;
-                case UN_H_WIRE: case PW_H_WIRE:      save_data += '-'; break;
-                case UN_V_WIRE: case PW_V_WIRE:      save_data += '|'; break;
-                case UN_AND: case PW_AND:            save_data += 'A'; break;
-                case UN_NOT: case PW_NOT:            save_data += 'N'; break;
-                case UN_XOR: case PW_XOR:            save_data += 'X'; break;
-                case UN_BRIDGE: case PW_BRIDGE:      save_data += '+'; break;
-                case UN_LEAKYB: case PW_LEAKYB:      save_data += '~'; break;
-                case PW_POWER:                       save_data += '@'; break;
-                case UN_WALL:                        save_data += ';'; break;
-                case E_WALL:                         save_data += ':'; break;
-                case UN_BIT:                         save_data += 'B'; break;
-                case PW_BIT:                         save_data += '&'; break;
-                case UN_N_DIODE: case PW_N_DIODE:    save_data += '^'; break;
-                case UN_E_DIODE: case PW_E_DIODE:    save_data += '>'; break;
-                case UN_S_DIODE: case PW_S_DIODE:    save_data += 'V'; break;
-                case UN_W_DIODE: case PW_W_DIODE:    save_data += '<'; break;
-                case UN_DELAY: case PW_DELAY:        save_data += '%'; break;
+                case EMPTY:                         save_data += ' '; break;
+                case UN_WIRE: case PW_WIRE:         save_data += '#'; break;
+                case UN_H_WIRE: case PW_H_WIRE:     save_data += '-'; break;
+                case UN_V_WIRE: case PW_V_WIRE:     save_data += '|'; break;
+                case UN_AND: case PW_AND:           save_data += 'A'; break;
+                case UN_NOT: case PW_NOT:           save_data += 'N'; break;
+                case UN_XOR: case PW_XOR:           save_data += 'X'; break;
+                case UN_BRIDGE: case PW_BRIDGE:     save_data += '+'; break;
+                case UN_LEAKYB: case PW_LEAKYB:     save_data += '~'; break;
+                case PW_POWER:                      save_data += '@'; break;
+                case UN_WALL:                       save_data += ';'; break;
+                case E_WALL:                        save_data += ':'; break;
+                case UN_BIT:                        save_data += 'B'; break;
+                case PW_BIT:                        save_data += '&'; break;
+                case UN_N_DIODE: case PW_N_DIODE:   save_data += '^'; break;
+                case UN_E_DIODE: case PW_E_DIODE:   save_data += '>'; break;
+                case UN_S_DIODE: case PW_S_DIODE:   save_data += 'V'; break;
+                case UN_W_DIODE: case PW_W_DIODE:   save_data += '<'; break;
+                case UN_DELAY: case PW_DELAY:       save_data += '%'; break;
                 case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
-                case UN_DISPLAY: case PW_DISPLAY:    save_data += 'D'; break;
-                case UN_ADAPTER: case PW_ADAPTER:    save_data += 'O'; break;
+                case UN_DISPLAY: case PW_DISPLAY:   save_data += 'D'; break;
+                case UN_ADAPTER: case PW_ADAPTER:   save_data += 'O'; break;
+                case R_RANDOM:                      save_data += 'R'; break;
             }
             if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
                 save_data += board[x][y] - 2;
@@ -271,18 +272,19 @@ void loadBoard (std::string load_name, bool _is_component = false)
                     case '+': load_char = UN_BRIDGE;  break;
                     case '~': load_char = UN_LEAKYB;  break;
                     case '@': load_char = PW_POWER;   break;
-                    case 'V': load_char = UN_S_DIODE; break;
                     case ';': load_char = UN_WALL;    break;
                     case ':': load_char = E_WALL;     break;
                     case 'B': load_char = UN_BIT;     break;
                     case '&': load_char = PW_BIT;     break;
                     case '^': load_char = UN_N_DIODE; break;
+                    case '>': load_char = UN_E_DIODE; break;
+                    case 'V': load_char = UN_S_DIODE; break;
+                    case '<': load_char = UN_W_DIODE; break;
                     case '%': load_char = UN_DELAY;   break;
                     case '$': load_char = U1_STRETCH; break;
                     case 'D': load_char = UN_DISPLAY; break;
                     case 'O': load_char = UN_ADAPTER; break;
-                    case '>': load_char = UN_E_DIODE; break;
-                    case '<': load_char = UN_W_DIODE; break;
+                    case 'R': load_char = R_RANDOM;   break;
                 }
                 if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
                 {
@@ -331,7 +333,7 @@ void outputWelcome ()
               << "\n"+ wh("fF") +"crosshairs, go-to coord"
               << "\n"+ wh("0-9") +"place/toggle switch"
               << "\n"+ wh("gcGC") +"North/South/West/East diodes"
-              << "\n"+ wh("rRl") +"bridge, leaky bridge, power"
+              << "\n"+ wh("rRl_") +"bridge, leaky bridge, power, random"
               << "\n"+ wh("tns-") +"AND, NOT, XOR, adapter"
               << "\n"+ wh("dDSb") +"delay, display, stretcher, bit"
               << "\n"+ wh("PpiI") +"pause, next, slow-motion, fast-motion"
@@ -517,6 +519,11 @@ int32_t main ()
 
                     case 'l': //Power
                         *look = PW_POWER;
+                        to_move = true;
+                        break;
+
+                    case '_': //Random
+                        *look = R_RANDOM;
                         to_move = true;
                         break;
 
