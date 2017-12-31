@@ -10,7 +10,7 @@
 * Add label making to undo history
 
 ##TODO
-* Make Bits' states saved
+* Make Switches adaptable (+ change their handling to an actual UN/PW component)
 * Move variables into local scope
 * Replace macro definitions with constant struct with display & storage information
 * Make autobridge and wire toggle A, make h and H direct wire directions
