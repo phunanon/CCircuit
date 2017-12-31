@@ -192,7 +192,7 @@ void saveBoard (std::string save_name, bool _is_component = false)
                 case U1_STRETCH: case P1_STRETCH: case P2_STRETCH: case P3_STRETCH: save_data += '$'; break;
                 case UN_DISPLAY: case PW_DISPLAY:   save_data += 'D'; break;
                 case UN_ADAPTER: case PW_ADAPTER:   save_data += 'O'; break;
-                case R_RANDOM:                      save_data += 'R'; break;
+                case UN_RANDOM: case PW_RANDOM:     save_data += 'R'; break;
             }
             if (board[x][y] >= 50 && board[x][y] <= 59) { //Is switch?
                 save_data += board[x][y] - 2;
@@ -284,7 +284,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
                     case '$': load_char = U1_STRETCH; break;
                     case 'D': load_char = UN_DISPLAY; break;
                     case 'O': load_char = UN_ADAPTER; break;
-                    case 'R': load_char = R_RANDOM;   break;
+                    case 'R': load_char = UN_RANDOM;  break;
                 }
                 if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
                 {
@@ -523,7 +523,7 @@ int32_t main ()
                         break;
 
                     case '_': //Random
-                        *look = R_RANDOM;
+                        *look = UN_RANDOM;
                         to_move = true;
                         break;
 

@@ -96,7 +96,11 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
         --diode;
         --wire;
         if (is_power_present) { return !is_powered; }  //There's a Switch
-        if (look == PW_POWER && !is_next_to_adapter) { return false; } //There's a Power
+        if (!is_next_to_adapter) {
+            if (look == PW_POWER) { return false; } //There's a Power
+            if (look == PW_RANDOM) { return false; } //There's a Powered Random
+            if (look == UN_RANDOM) { return true; } //There's a Random
+        }
         if (look == UN_WIRE                             //
          || look == UN_BRIDGE || look == UN_LEAKYB      //
          || look == wire                                //
@@ -108,8 +112,8 @@ bool powerAtDir (uint16_t _X, uint16_t _Y, uint8_t _dir, bool _is_dead = false)
   //Return for if checking for alive
     return look == PW_WIRE                          //
         || look == wire                              //
-        || (look == PW_POWER && !is_next_to_adapter) //
-        || look == diode                             // Powered by Wire/D Wire/Power/Diode
+        || (!is_next_to_adapter && (look == PW_POWER || look == PW_RANDOM)) //
+        || look == diode                             // Powered by Wire/D Wire/Power/Random/Diode
         || (_dir == NORTH && (look == PW_ADAPTER || (!is_next_to_adapter && (look == PW_DELAY || look == PW_BIT || look == PW_AND || look == PW_XOR || look == UN_NOT || look == P1_STRETCH || look == P2_STRETCH || look == P3_STRETCH)))) // Powered from the North by Bit/Delay/AND/XOR/NOT/Stretcher/Adapter
         || (is_power_present && is_powered);      // Power
 }
@@ -123,30 +127,22 @@ uint8_t nextToLives (uint16_t _X, uint16_t _Y, bool _false_on_dead = false)
   //Check North
     if (ignore_dir != NORTH) {
         if (_false_on_dead && powerAtDir(_X, _Y, NORTH, true)) { return 0; }
-        else if (powerAtDir(_X, _Y, NORTH)) {
-            ++lives;
-        }
+        else if (powerAtDir(_X, _Y, NORTH)) { ++lives; }
     }
   //Check East
     if (ignore_dir != EAST) {
         if (_false_on_dead && powerAtDir(_X, _Y, EAST, true)) { return 0; }
-        else if (powerAtDir(_X, _Y, EAST)) {
-            ++lives;
-        }
+        else if (powerAtDir(_X, _Y, EAST)) { ++lives; }
     }
   //Check South
     if (ignore_dir != SOUTH) {
         if (_false_on_dead && powerAtDir(_X, _Y, SOUTH, true)) { return 0; }
-        else if (powerAtDir(_X, _Y, SOUTH)) {
-            ++lives;
-        }
+        else if (powerAtDir(_X, _Y, SOUTH)) { ++lives; }
     }
   //Check West
     if (ignore_dir != WEST) {
         if (_false_on_dead && powerAtDir(_X, _Y, WEST, true)) { return 0; }
-        if (powerAtDir(_X, _Y, WEST)) {
-            ++lives;
-        }
+        if (powerAtDir(_X, _Y, WEST)) { ++lives; }
     }
   //Return
     return lives;
@@ -194,13 +190,13 @@ void elec () //Electrify the board appropriately
             if      (*look == PW_WIRE)    { *look = UN_WIRE; }    //Powered Wire to Wire
             else if (*look == PW_H_WIRE)  { *look = UN_H_WIRE;  } //Powered H Wire to H Wire
             else if (*look == PW_V_WIRE)  { *look = UN_V_WIRE;  } //Powered V Wire to V Wire
-            else if (*look == PW_BRIDGE)  { *look = UN_BRIDGE;  } //Powered Bridge to Bridge
-            else if (*look == PW_LEAKYB)  { *look = UN_LEAKYB;  } //Powered Leaky Bridge to Leaky Bridge
-            else if (*look == PW_ADAPTER) { *look = UN_ADAPTER; } //Powered Adapter to Adapter
             else if (*look == PW_N_DIODE) { *look = UN_N_DIODE; } //Powered N Diode to N Diode
             else if (*look == PW_E_DIODE) { *look = UN_E_DIODE; } //Powered E Diode to E Diode
             else if (*look == PW_S_DIODE) { *look = UN_S_DIODE; } //Powered S Diode to S Diode
             else if (*look == PW_W_DIODE) { *look = UN_W_DIODE; } //Powered W Diode to W Diode
+            else if (*look == PW_BRIDGE)  { *look = UN_BRIDGE;  } //Powered Bridge to Bridge
+            else if (*look == PW_LEAKYB)  { *look = UN_LEAKYB;  } //Powered Leaky Bridge to Leaky Bridge
+            else if (*look == PW_ADAPTER) { *look = UN_ADAPTER; } //Powered Adapter to Adapter
         }
     }
   //Electrify cursor?
@@ -433,8 +429,10 @@ void elec () //Electrify the board appropriately
                         board[x][y] = UN_DELAY;
                     }
                     break;
-                case R_RANDOM:
-                    if (rand() % 2) { break; }
+                case UN_RANDOM: //Random
+                case PW_RANDOM: //Powered Random
+                    if (rand() % 2) { board[x][y] = UN_RANDOM; break; }
+                    board[x][y] = PW_RANDOM; //Electrify
                 case PW_POWER: //Power
                     powerAdapter(x, y, NODIR);
                     break;

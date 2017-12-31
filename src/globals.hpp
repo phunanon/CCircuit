@@ -51,8 +51,9 @@
 #define PW_DELAY    37
 #define UN_DISPLAY  38
 #define PW_DISPLAY  39
-#define R_RANDOM    40
-#define NOTHING     41
+#define UN_RANDOM   40
+#define PW_RANDOM   41
+#define NOTHING     42
 //Note: 50+ are Switches
 
 const uint16_t board_W = 4096;
