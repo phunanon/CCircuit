@@ -307,6 +307,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_V_WIRE)                    { ++routes; can_north = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_north = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_north = true; *look = PW_LEAKYB; }
+                else if (*look == E_WALL)                       { ++routes; can_double_north = true; }
             }
           //East
             if (can_H && *dir != WEST)                  {
@@ -315,6 +316,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_H_WIRE)                    { ++routes; can_east = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_east = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_east = true; *look = PW_LEAKYB; }
+                else if (*look == E_WALL)                       { ++routes; can_double_east = true; }
             }
           //South
             if (can_V && *dir != NORTH && branch[b].y)  {
@@ -323,6 +325,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_V_WIRE)                    { ++routes; can_south = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_south = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_south = true; *look = PW_LEAKYB; }
+                else if (*look == E_WALL)                       { ++routes; can_double_south = true; }
             }
           //West
             if (can_H && *dir != EAST)                  {
@@ -331,6 +334,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_H_WIRE)                    { ++routes; can_west = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_west = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_west = true; *look = PW_LEAKYB; }
+                else if (*look == E_WALL)                       { ++routes; can_double_west = true; }
             }
 
             if (routes == 0) {
