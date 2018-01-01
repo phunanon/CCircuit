@@ -4,7 +4,7 @@ bool to_crosshairs = false;
 bool to_hide_UI = false;
 
 
-void clearScreen () { std::cout << "\033[2J\033[1;1H"; }
+void clearScreen () { std::cout << "\033c"; }
 
 std::pair<uint16_t, uint16_t> getTerminalDimensions ()
 {
