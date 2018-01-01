@@ -543,8 +543,19 @@ int32_t main (int argc, char* argv[])
                 prev_dir_Y = prev_dir_X = 0;
                 prev_dir_X = 1;
             } else {
+
                 uint8_t move_dist = 1;
                 Control pressed_control = controls[pressed_ch];
+                bool to_auto_bridge = is_auto_bridge && (*look == UN_BRIDGE
+                                            || *look == UN_WIRE || *look == PW_WIRE
+                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
+                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
+                                            || *look == UN_S_DIODE || *look == PW_S_DIODE
+                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
+                                            || *look == UN_H_WIRE  || *look == PW_H_WIRE
+                                            || *look == UN_V_WIRE  || *look == PW_V_WIRE
+                                            || *look == UN_LEAKYB || *look == PW_LEAKYB);
+
                 switch (pressed_control) {
 
                     case c_far_north: //Far North
@@ -603,17 +614,8 @@ int32_t main (int argc, char* argv[])
                         break;
 
                     case c_wire: //Wire
-                        if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
-                                           || *look == UN_N_DIODE || *look == PW_N_DIODE
-                                           || *look == UN_E_DIODE || *look == PW_E_DIODE
-                                           || *look == UN_S_DIODE || *look == PW_S_DIODE
-                                           || *look == UN_W_DIODE || *look == PW_W_DIODE
-                                           || *look == UN_H_WIRE  || *look == PW_H_WIRE
-                                           || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
-                                          )
-                           ) { //Auto-bridging
-                            *look = UN_BRIDGE;
+                        if (to_auto_bridge) { //Auto-bridging
+                            *look = (*look == UN_LEAKYB || *look == PW_LEAKYB ? *look : UN_BRIDGE);
                         } else {
                             if (is_dir_wire) {
                                 if (prev_dir_X) {
@@ -693,15 +695,8 @@ int32_t main (int argc, char* argv[])
                         break;
 
                     case c_north_diode: //North Diode
-                        if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
-                                           || *look == UN_E_DIODE || *look == PW_E_DIODE
-                                           || *look == UN_W_DIODE || *look == PW_W_DIODE
-                                           || *look == UN_H_WIRE  || *look == PW_H_WIRE
-                                           || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
-                                          )
-                           ) { //Auto-bridging
-                            *look = UN_BRIDGE;
+                        if (to_auto_bridge) { //Auto-bridging
+                            *look = (*look == UN_LEAKYB || *look == PW_LEAKYB ? *look : UN_BRIDGE);
                         } else {
                             *look = UN_N_DIODE;
                         }
@@ -709,15 +704,8 @@ int32_t main (int argc, char* argv[])
                         break;
 
                     case c_east_diode: //East diode
-                        if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
-                                           || *look == UN_S_DIODE || *look == PW_S_DIODE
-                                           || *look == UN_N_DIODE || *look == PW_N_DIODE
-                                           || *look == UN_H_WIRE  || *look == PW_H_WIRE
-                                           || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
-                                          )
-                           ) { //Auto-bridging
-                            *look = UN_BRIDGE;
+                        if (to_auto_bridge) { //Auto-bridging
+                            *look = (*look == UN_LEAKYB || *look == PW_LEAKYB ? *look : UN_BRIDGE);
                         } else {
                             *look = UN_E_DIODE;
                         }
@@ -725,15 +713,8 @@ int32_t main (int argc, char* argv[])
                         break;
 
                     case c_south_diode: //South Diode
-                        if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
-                                           || *look == UN_E_DIODE || *look == PW_E_DIODE
-                                           || *look == UN_W_DIODE || *look == PW_W_DIODE
-                                           || *look == UN_H_WIRE  || *look == PW_H_WIRE
-                                           || *look == UN_V_WIRE  || *look == PW_V_WIRE
-                                           || *look == UN_BRIDGE  || *look == UN_LEAKYB || *look == PW_LEAKYB
-                                          )
-                           ) { //Auto-bridging
-                            *look = UN_BRIDGE;
+                        if (to_auto_bridge) { //Auto-bridging
+                            *look = (*look == UN_LEAKYB || *look == PW_LEAKYB ? *look : UN_BRIDGE);
                         } else {
                             *look = UN_S_DIODE;
                         }

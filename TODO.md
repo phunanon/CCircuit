@@ -7,7 +7,6 @@
 ##MINOR
 * Fix Stretcher powered by diode from flank
 * Fix delay in some key presses
-* Create to_autobridge on diodes &co
 
 ##TODO
 * Make Switches fully adaptable (+ change their handling to an actual UN/PW component)
