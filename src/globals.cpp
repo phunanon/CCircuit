@@ -5,6 +5,8 @@ const std::string SYSPATH = ""; //"/system/xbin"; //For BusyBox on Android
 std::string proj_name = "untitled";
 bool is_run = true;
 
+Layout layout = kb_qwerty;
+
 const uint16_t elec_W = board_W - 2;
 const uint16_t elec_H = board_H - 2;
 char board[board_W][board_H];

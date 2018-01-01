@@ -318,52 +318,197 @@ void loadBoard (std::string load_name, bool _is_component = false)
 
 void outputWelcome ()
 {
-    auto wh = [](std::string text) { return "\033[0;37;40m"+ text +"\033[0m\t"; }; //Colour text to white on black
+    auto wh = [](std::string text) { return "\n\033[0;37;40m"+ text +"\033[0m\t"; }; //Colour text to white on black
     auto rd = [](std::string text) { return "\033[1;31;40m"+ text +"\033[0m\t"; }; //Colour text to light red on black
     auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t"; }; //Colour text to light blue on black
+    const std::string l_blob[2][24] = {
+      //Dvorak
+        { "[space]", "[enter]", ".oeu", ">OEU", "hH", "A", "L", "f", "F", "crCR", "gGl_", "tns-", "dDSb", "PpiI", "yYvW", "zZ", "ax", "X", "BkKj", "Mmw" },
+      //Qwerty
+        { "[space]", "[enter]", "ijkl", "IJKL", "fw", "+", "F", "u", "=", "ghGH", "tTer", "anAE", "dDsb", "Pp-_", "oSOW", "zy", "cv", "Z", "VxXM", "m,<" }
+    };
+    std::string blob[24] = l_blob[layout];
+    uint8_t l = layout;
     std::cout << rd("\nCCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n")
               << bl("\nINSTRUCTIONS\n============")
-              << "\n"+ wh("[space]") +"remove anything"
-              << "\n"+ wh("[enter]") +"electrify cursor"
-              << "\n"+ wh(".oeu") +"up, left, down, right"
-              << "\n"+ wh(">OEU") +"far up, far left, far down, far right"
-              << "\n"+ wh("hH") +"place wire, toggle auto-bridge for wires and diodes"
-              << "\n"+ wh("a") +"toggle general use wire/directional wire"
-              << "\n"+ wh("L") +"far lay under cursor"
-              << "\n"+ wh("fF") +"crosshairs/hide UI, go-to coord"
-              << "\n"+ wh("0-9") +"place/toggle switch"
-              << "\n"+ wh("gcGC") +"North/South/West/East diodes"
-              << "\n"+ wh("rRl_") +"bridge, leaky bridge, power, random"
-              << "\n"+ wh("tns-") +"AND, NOT, XOR, adapter"
-              << "\n"+ wh("dDSb") +"delay, display, stretcher, bit"
-              << "\n"+ wh("PpiI") +"pause, next, slow-motion, fast-motion"
-              << "\n"+ wh(";:") +"wall, conductive wall"
-              << "\n"+ wh("yYvV") +"load, save, import component, wipe board"
-              << "\n"+ wh("'") +"toggle [lowercase] label mode"
-              << "\n"+ wh("zZ") +"undo, redo"
-              << "\n"+ wh("qQ") +"quit/no onexitsave quit"
-              << "\n"+ wh("?") +"show this welcome screen"
+              << wh(blob[0]) +"remove anything"
+              << wh(blob[1]) +"electrify cursor"
+              << wh(blob[2]) +"up, left, down, right"
+              << wh(blob[3]) +"far up, far left, far down, far right"
+              << wh(blob[4]) +"place wire, toggle general use wire/directional wire"
+              << wh(blob[5]) +"toggle auto-bridge for wires and diodes"
+              << wh(blob[6]) +"far lay under cursor"
+              << wh(blob[7]) +"crosshairs/hide UI"
+              << wh(blob[8]) +"go-to coordinates"
+              << wh("0-9") +"place/toggle switch"
+              << wh(blob[9]) +"North/South/West/East diodes"
+              << wh(blob[10]) +"bridge, leaky bridge, power, random"
+              << wh(blob[11]) +"AND, NOT, XOR, adapter"
+              << wh(blob[12]) +"delay, display, stretcher, bit"
+              << wh(blob[13]) +"pause, next, slow-motion, fast-motion"
+              << wh(";:") +"wall, conductive wall"
+              << wh(blob[14]) +"load, save, import component, wipe board"
+              << wh("'") +"toggle [lowercase] label mode"
+              << wh(blob[15]) +"undo, redo"
+              << wh("qQ") +"quit/no onexitsave quit"
+              << wh("?") +"show this welcome screen"
               << std::endl
-              << "\n"+ wh("xb") +"initiate/complete/discard selection, paste"
-              << "\n"+ wh("X") +"restore last cut/paste operation"
-              << "\n"+ wh("BkKj") +"... paste unelectrified, move, swap, clear area"
-              << "\n"+ wh("Jmw") +"... paste mask, paste x flip, paste y flip"
+              << wh(blob[16]) +"initiate/complete/discard selection, paste"
+              << wh(blob[18]) +"... paste unelectrified, move, swap, clear area"
+              << wh(blob[19]) +"... paste mask, paste x flip, paste y flip"
+              << wh(blob[17]) +"restore last cut/paste operation"
               << "\n\n- After initiating a selection, you can do a Save to export that component."
               << bl("\n\nINFORMATION\n===========")
               << "\n- Electronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
+              << "\n- Execute as ./CCircuit dvorak to change keyboard layout"
               << std::endl;
 }
 
 
 
+enum Control { c_nothing, c_remove, c_electrify, c_quit, c_quit_hard, c_backspace, c_select, c_north, c_east, c_south, c_west, c_far_north, c_far_east, c_far_south, c_far_west, c_wire, c_toggle_autobridge, c_toggle_wire, c_AND, c_NOT, c_XOR, c_bridge, c_leaky_bridge, c_power, c_random, c_far_lay, c_wall, c_e_wall, c_north_diode, c_east_diode, c_south_diode, c_west_diode, c_delay, c_display, c_stretcher, c_bit, c_adapter, c_undo, c_redo, c_paste, c_paste_unelec, c_paste_x_flip, c_paste_y_flip, c_paste_move, c_paste_swap, c_clear_area, c_paste_mask, c_undo_paste, c_load_component, c_load_project, c_save, c_wipe, c_goto, c_toggle_UI, c_slow_mo, c_fast_mo, c_toggle_label, c_next_elec, c_toggle_pause, c_help };
+Control controls[256] = { c_nothing };
+
+void determineKbLayout (int argc, char* argv[])
+{
+    if (argc > 1) {
+        std::string entered = std::string(argv[1]);
+        if         (entered == "dvorak") {
+            layout = kb_dvorak;
+        } else if (entered == "qwerty") {
+            layout = kb_qwerty;
+        }
+    }
+    
+    controls[' ']   = c_remove;
+    controls['\n']  = c_electrify;
+    controls['q'] = c_quit;
+    controls['Q'] = c_quit_hard;
+    controls[127] = c_backspace;
+    controls['\'']  = c_toggle_label;
+    controls['p']   = c_next_elec;
+    controls['P']   = c_toggle_pause;
+    controls['?']   = c_help;
+    
+    switch (layout) {
+        case kb_dvorak:
+            controls['.']   = c_north;
+            controls['u']   = c_east;
+            controls['e']   = c_south;
+            controls['o']   = c_west;
+            controls['>']   = c_far_north;
+            controls['U']   = c_far_east;
+            controls['E']   = c_far_south;
+            controls['O']   = c_far_west;
+            controls['h']   = c_wire;
+            controls['H']   = c_toggle_wire;
+            controls['A']   = c_toggle_autobridge;
+            controls['t']   = c_AND;
+            controls['n']   = c_NOT;
+            controls['s']   = c_XOR;
+            controls['g']   = c_bridge;
+            controls['G']   = c_leaky_bridge;
+            controls['l']   = c_power;
+            controls['_']   = c_random;
+            controls['L']   = c_far_lay;
+            controls[';']   = c_wall;
+            controls[':']   = c_e_wall;
+            controls['c']   = c_north_diode;
+            controls['r']   = c_east_diode;
+            controls['C']   = c_south_diode;
+            controls['R']   = c_west_diode;
+            controls['d']   = c_delay;
+            controls['D']   = c_display;
+            controls['S']   = c_stretcher;
+            controls['b']   = c_bit;
+            controls['-']   = c_adapter;
+            controls['z']   = c_undo;
+            controls['Z']   = c_redo;
+            controls['a']   = c_select;
+            controls['x']   = c_paste;
+            controls['B']   = c_paste_unelec;
+            controls['k']   = c_paste_move;
+            controls['K']   = c_paste_swap;
+            controls['m']   = c_paste_x_flip;
+            controls['w']   = c_paste_y_flip;
+            controls['j']   = c_clear_area;
+            controls['M']   = c_paste_mask;
+            controls['X']   = c_undo_paste;
+            controls['v']   = c_load_component;
+            controls['y']   = c_load_project;
+            controls['Y']   = c_save;
+            controls['W']   = c_wipe;
+            controls['F']   = c_goto;
+            controls['f']   = c_toggle_UI;
+            controls['i']   = c_slow_mo;
+            controls['I']   = c_fast_mo;
+            break;
+        case kb_qwerty:
+            controls['i']   = c_north;
+            controls['l']   = c_east;
+            controls['k']   = c_south;
+            controls['j']   = c_west;
+            controls['I']   = c_far_north;
+            controls['L']   = c_far_east;
+            controls['K']   = c_far_south;
+            controls['J']   = c_far_west;
+            controls['f']   = c_wire;
+            controls['w']   = c_toggle_wire;
+            controls['+']   = c_toggle_autobridge;
+            controls['a']   = c_AND;
+            controls['n']   = c_NOT;
+            controls['A']   = c_XOR;
+            controls['t']   = c_bridge;
+            controls['T']   = c_leaky_bridge;
+            controls['e']   = c_power;
+            controls['r']   = c_random;
+            controls['F']   = c_far_lay;
+            controls[';']   = c_wall;
+            controls[':']   = c_e_wall;
+            controls['g']   = c_north_diode;
+            controls['H']   = c_east_diode;
+            controls['h']   = c_south_diode;
+            controls['G']   = c_west_diode;
+            controls['d']   = c_delay;
+            controls['D']   = c_display;
+            controls['s']   = c_stretcher;
+            controls['b']   = c_bit;
+            controls['E']   = c_adapter;
+            controls['z']   = c_undo;
+            controls['y']   = c_redo;
+            controls['c']   = c_select;
+            controls['v']   = c_paste;
+            controls['V']   = c_paste_unelec;
+            controls['x']   = c_paste_move;
+            controls['X']   = c_paste_swap;
+            controls[',']   = c_paste_x_flip;
+            controls['<']   = c_paste_y_flip;
+            controls['M']   = c_clear_area;
+            controls['m']   = c_paste_mask;
+            controls['Z']   = c_undo_paste;
+            controls['O']   = c_load_component;
+            controls['o']   = c_load_project;
+            controls['S']   = c_save;
+            controls['W']   = c_wipe;
+            controls['=']   = c_goto;
+            controls['u']   = c_toggle_UI;
+            controls['-']   = c_slow_mo;
+            controls['_']   = c_fast_mo;
+            break;
+    }
+}
+
+
 uint16_t start_label_X; //Label's X
 char prev_dir_X, prev_dir_Y, prev_Z, elec_counter;
 uint16_t prev_X, prev_Y;
-int32_t main ()
+int32_t main (int argc, char* argv[])
 {
   //Load shite to listen to pressed keys
     loadKeyListen();
     auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
+  //Detect keyboard layout
+    determineKbLayout(argc, argv);
   //Welcome screen
     outputWelcome();
     std::cout << "\n\nInitialising board..." << std::endl;
@@ -399,41 +544,42 @@ int32_t main ()
                 prev_dir_X = 1;
             } else {
                 uint8_t move_dist = 1;
-                switch (pressed_ch) {
+                Control pressed_control = controls[pressed_ch];
+                switch (pressed_control) {
 
-                    case '>': //Far up
+                    case c_far_north: //Far North
                         move_dist = (is_data_to_paste ? paste_Y_dist : MOVE_FAR);
-                    case '.': //Up
+                    case c_north: //North
                         if (cursor_Y - move_dist >= 0) { cursor_Y -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = -1;
                         break;
 
-                    case 'U': //Far right
+                    case c_far_east: //Far East
                         move_dist = (is_data_to_paste ? paste_X_dist : MOVE_FAR*2);
-                    case 'u': //Right
+                    case c_east: //East
                         if (cursor_X + move_dist < elec_W) { cursor_X += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_X = 1;
                         break;
 
-                    case 'E': //Far down
+                    case c_far_south: //Far South
                         move_dist = (is_data_to_paste ? paste_Y_dist : MOVE_FAR);
-                    case 'e': //Down
+                    case c_south: //South
                         if (cursor_Y + move_dist < elec_H) { cursor_Y += move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_Y = 1;
                         break;
 
-                    case 'O': //Far left
+                    case c_far_west: //Far West
                         move_dist = (is_data_to_paste ? paste_X_dist : MOVE_FAR*2);
-                    case 'o': //Left
+                    case c_west: //West
                         if (cursor_X - move_dist >= 0) { cursor_X -= move_dist; }
                         prev_dir_Y = prev_dir_X = 0;
                         prev_dir_X = -1;
                         break;
 
-                    case '\n': //New-line OR electrify cursor
+                    case c_electrify: //New-line OR electrify cursor
                         if (is_label_mode) {
                             cursor_X = start_label_X;
                             if (cursor_Y + 1 < elec_H) { ++cursor_Y; }
@@ -441,12 +587,13 @@ int32_t main ()
                             to_elec_cursor = true;
                         }
                         break;
-                    case 127: //Left-remove
+
+                    case c_backspace: //Left-remove
                         if (cursor_X > 1) { --cursor_X; }
                         prev_dir_Y = 0;
                         prev_dir_X = -1;
                         look = &board[cursor_X][cursor_Y];
-                    case ' ': //Remove
+                    case c_remove: //Remove
                         if (*look == 50 + switch_num) { //If on top of a switch, remove it correctly
                             placed_switches[switch_num] = false;
                             to_move = true;
@@ -455,7 +602,7 @@ int32_t main ()
                         to_move = (pressed_ch == 127 ? false : true);
                         break;
 
-                    case 'h': //Wire
+                    case c_wire: //Wire
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
@@ -483,50 +630,50 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'H': //Auto-bridge
+                    case c_toggle_autobridge: //Auto-bridge
                         is_auto_bridge = !is_auto_bridge;
                         break;
 
-                    case 'a': //Toggle wire
+                    case c_toggle_wire: //Toggle wire
                         is_dir_wire = !is_dir_wire;
                         break;
 
-                    case 't': //AND
+                    case c_AND: //AND
                         *look = UN_AND;
                         to_move = true;
                         break;
 
-                    case 'n': //NOT
+                    case c_NOT: //NOT
                         *look = UN_NOT;
                         to_move = true;
                         break;
 
-                    case 's': //XOR
+                    case c_XOR: //XOR
                         *look = UN_XOR;
                         to_move = true;
                         break;
 
-                    case 'r': //Bridge
+                    case c_bridge: //Bridge
                         *look = UN_BRIDGE;
                         to_move = true;
                         break;
 
-                    case 'R': //Leaky Bridge
+                    case c_leaky_bridge: //Leaky Bridge
                         *look = UN_LEAKYB;
                         to_move = true;
                         break;
 
-                    case 'l': //Power
+                    case c_power: //Power
                         *look = PW_POWER;
                         to_move = true;
                         break;
 
-                    case '_': //Random
+                    case c_random: //Random
                         *look = UN_RANDOM;
                         to_move = true;
                         break;
 
-                    case 'L': //Far lay
+                    case c_far_lay: //Far lay
                         for (uint8_t i = 0; i < MOVE_FAR && cursor_X > 1 && cursor_Y > 1 && cursor_X < elec_W && cursor_Y < elec_H; ++i) {
                             cursor_X += prev_dir_X;
                             cursor_Y += prev_dir_Y;
@@ -535,17 +682,17 @@ int32_t main ()
                         to_recalc = true;
                         break;
 
-                    case ';': //Wall
+                    case c_wall: //Wall
                         *look = UN_WALL;
                         to_move = true;
                         break;
 
-                    case ':': //Conductive Wall
+                    case c_e_wall: //Conductive Wall
                         *look = E_WALL;
                         to_move = true;
                         break;
 
-                    case 'g': //North Diode
+                    case c_north_diode: //North Diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
@@ -561,7 +708,7 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'C': //East diode
+                    case c_east_diode: //East diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_S_DIODE || *look == PW_S_DIODE
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
@@ -577,7 +724,7 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'c': //South Diode
+                    case c_south_diode: //South Diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_E_DIODE || *look == PW_E_DIODE
                                            || *look == UN_W_DIODE || *look == PW_W_DIODE
@@ -593,7 +740,7 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'G': //West diode
+                    case c_west_diode: //West diode
                         if (is_auto_bridge && (*look == UN_WIRE || *look == PW_WIRE
                                            || *look == UN_S_DIODE || *look == PW_S_DIODE
                                            || *look == UN_N_DIODE || *look == PW_N_DIODE
@@ -609,34 +756,39 @@ int32_t main ()
                         to_move = true;
                         break;
 
-                    case 'd': //Delay
+                    case c_delay: //Delay
                         *look = UN_DELAY;
                         to_move = true;
                         break;
 
-                    case 'S': //Stretcher
+                    case c_stretcher: //Stretcher
                         *look = U1_STRETCH;
                         to_move = true;
                         break;
 
-                    case 'D': //Display
+                    case c_display: //Display
                         *look = UN_DISPLAY;
                         to_move = true;
                         break;
 
-                    case '-': //Component Adapter
+                    case c_bit: //Bit
+                        *look = UN_BIT;
+                        to_move = true;
+                        break;
+
+                    case c_adapter: //Component Adapter
                         *look = UN_ADAPTER;
                         to_move = true;
                         break;
 
-                    case 'z': //Undo
+                    case c_undo: //Undo
                         if (u == 0) { u = UNDOS; }
                         --u;
                         board[undos[u][0]][undos[u][1]] = undos[u][2];
                         ++can_redo;
                         break;
 
-                    case 'Z': //Redo
+                    case c_redo: //Redo
                         if (u == UNDOS) { u = 0; }
                         if (can_redo > 0) {
                             --can_redo;
@@ -645,7 +797,7 @@ int32_t main ()
                         }
                         break;
 
-                    case 'x': //Copy
+                    case c_select: //Copy
                         if (is_copying = !is_copying) { //Are we not copying?
                             if (is_data_to_paste) { //Did we have something to paste?
                               //If so, clear it
@@ -679,27 +831,23 @@ int32_t main ()
                         }
                         break;
 
-                    case 'b': //Paste -or- Bit
-                        if (!is_data_to_paste) {
-                            *look = UN_BIT;
-                            to_move = true;
-                            break;
-                        }
-                    case 'B': //Paste unelectrified
-                    case 'm': //Paste x-flip
-                    case 'w': //Paste y-flip
-                    case 'k': //Cut
-                    case 'K': //Swap
-                    case 'j': //Clear area
-                    case 'J': //Paste mask
+
+                    case c_paste: //Paste
+                    case c_paste_unelec: //Paste unelectrified
+                    case c_paste_x_flip: //Paste x-flip
+                    case c_paste_y_flip: //Paste y-flip
+                    case c_paste_move: //Cut
+                    case c_paste_swap: //Swap
+                    case c_clear_area: //Clear area
+                    case c_paste_mask: //Paste mask
                         if (is_data_to_paste) {
                             to_copy_cursor = true;
                             uint16_t paste_X_end, paste_Y_end;
                             paste_X_end = cursor_X + paste_X_dist;
                             paste_Y_end = cursor_Y + paste_Y_dist;
                           //Prepare for later restore
-                            bool can_restore_origin = !is_no_copy_source && (pressed_ch == 'k' || pressed_ch == 'K' || pressed_ch == 'j');
-                            bool can_restore_destin = (pressed_ch == 'b' || pressed_ch == 'B' || pressed_ch == 'm' || pressed_ch == 'k' || pressed_ch == 'K' || pressed_ch == 'J');
+                            bool can_restore_origin = !is_no_copy_source && (pressed_control == c_paste_move || pressed_control == c_paste_swap || pressed_control == c_clear_area);
+                            bool can_restore_destin = (pressed_control == c_paste || pressed_control == c_paste_unelec || pressed_control == c_paste_x_flip || pressed_control == c_paste_move || pressed_control == c_paste_swap || pressed_control == c_paste_mask);
                             if (can_restore_origin) {
                                 cloneVector(restore_origin_data, copy_data);
                             } else {
@@ -716,7 +864,7 @@ int32_t main ()
                             }
                           //Paste operations
                             if (!is_no_copy_source) {
-                                if (pressed_ch == 'k' || pressed_ch == 'j') { //Remove copied-from area (move/clear)?
+                                if (pressed_control == c_paste_move || pressed_control == c_clear_area) { //Remove copied-from area (move/clear)?
                                     for (uint16_t x = copy_X; x < copy_X2; ++x) {
                                         for (uint16_t y = copy_Y; y < copy_Y2; ++y) {
                                             board[x][y] = EMPTY;
@@ -724,9 +872,9 @@ int32_t main ()
                                     }
                                 }
                             }
-                            if (pressed_ch != 'j') { //Paste copy data onto the board
+                            if (pressed_control != c_clear_area) { //Paste copy data onto the board
                                 uint16_t i = 0;
-                                if (pressed_ch == 'K' && !is_no_copy_source) { //Swap
+                                if (pressed_control == c_paste_swap && !is_no_copy_source) { //Swap
                                     for (uint16_t y = copy_Y, y2 = cursor_Y; y < copy_Y2; ++y, ++y2) {
                                         for (uint16_t x = copy_X, x2 = cursor_X; x < copy_X2; ++x, ++x2) {
                                             board[x][y] = board[x2][y2];
@@ -736,7 +884,7 @@ int32_t main ()
                                     }
                                     i = 0;
                                 }
-                                if (pressed_ch == 'm') { //x-flip paste
+                                if (pressed_control == c_paste_x_flip) { //x-flip paste
                                     for (uint16_t y = cursor_Y; y < paste_Y_end; ++y) {
                                         for (uint16_t x = paste_X_end - 1; x >= cursor_X; --x) {
                                             board[x][y] = copy_data->at(i);
@@ -745,7 +893,7 @@ int32_t main ()
                                             ++i;
                                         }
                                     }
-                                } else if (pressed_ch == 'w') { //y-flip paste
+                                } else if (pressed_control == c_paste_y_flip) { //y-flip paste
                                     for (uint16_t y = paste_Y_end - 1; y >= cursor_Y; --y) {
                                         for (uint16_t x = cursor_X; x < paste_X_end; ++x) {
                                             board[x][y] = copy_data->at(i);
@@ -755,7 +903,7 @@ int32_t main ()
                                         }
                                     }
                                 } else { //Other paste
-                                    if (pressed_ch == 'B') { //Unelectrified
+                                    if (pressed_control == c_paste_unelec) { //Unelectrified
                                         for (uint16_t y = cursor_Y; y < paste_Y_end; ++y) {
                                             for (uint16_t x = cursor_X; x < paste_X_end; ++x) {
                                                 uint8_t c = copy_data->at(i);
@@ -770,7 +918,7 @@ int32_t main ()
                                             }
                                         }
                                     } else { //Unmodified
-                                        if (pressed_ch == 'J') { //Paste mask (' ' is not pasted)
+                                        if (pressed_control == c_paste_mask) { //Paste mask (' ' is not pasted)
                                             for (uint16_t y = cursor_Y; y < paste_Y_end; ++y) {
                                                 for (uint16_t x = cursor_X; x < paste_X_end; ++x) {
                                                     char c = copy_data->at(i);
@@ -778,7 +926,7 @@ int32_t main ()
                                                     ++i;
                                                 }
                                             }
-                                        } else if (pressed_ch == 'b' || pressed_ch == 'k') { //Normal, full paste
+                                        } else if (pressed_control == c_paste || pressed_control == c_paste_move) { //Normal, full paste
                                             for (uint16_t y = cursor_Y; y < paste_Y_end; ++y) {
                                                 for (uint16_t x = cursor_X; x < paste_X_end; ++x) {
                                                     if (i >= copy_data->size()) { break; }
@@ -790,7 +938,7 @@ int32_t main ()
                                     }
                                 }
                             }
-                            if ((pressed_ch == 'k' || pressed_ch == 'j' || pressed_ch == 'K') && !is_no_copy_source) { //Was remove copied-from area (cut/clear) or have we finished (swap)?
+                            if (!is_no_copy_source && (pressed_control == c_paste_move || pressed_control == c_clear_area || pressed_control == c_paste_swap)) { //Was remove copied-from area (cut/clear) or have we finished (swap)?
                                 copy_data->clear();
                                 is_data_to_paste = false;
                             }
@@ -808,7 +956,7 @@ int32_t main ()
                         }
                         break;
 
-                    case 'X': //Restore last cut/paste
+                    case c_undo_paste: //Restore last cut/paste
                         if (restore_origin_data->size()) {
                             uint32_t i = 0;
                             for (uint16_t y = copy_Y; y < copy_Y2; ++y) {
@@ -831,8 +979,8 @@ int32_t main ()
                         }
                         break;
 
-                    case 'q': //Quit
-                    case 'Q': //No onexitsave Quit
+                    case c_quit: //Quit
+                    case c_quit_hard: //No onexitsave Quit
                         std::cout << std::string("\033[0;37;40mAre you sure you want to quit") + (pressed_ch == 'Q' ? " without onexitsave" : "") + " (y/N)?" << std::endl;
                         kbPause();
                         if (getchar() == 'y') {
@@ -845,7 +993,7 @@ int32_t main ()
                         }
                         break;
 
-                    case 'Y': //Save project/component
+                    case c_save: //Save project/component
                     {
                         bool is_save_component = is_data_to_paste && !is_no_copy_source;
                         std::cout << "\033[0;37;40mSaving  \033[1;37;40m";
@@ -866,10 +1014,10 @@ int32_t main ()
                     }
                         break;
 
-                    case 'v': //Load component
-                    case 'y': //Load project
+                    case c_load_component: //Load component
+                    case c_load_project: //Load project
                     {
-                        bool is_load_component = pressed_ch == 'v';
+                        bool is_load_component = (pressed_control == c_load_component);
                         std::cout << "\033[0;37;40mLoading \033[1;37;40m";
                         if (is_load_component) {
                             std::cout << "COMPONENT" << std::endl;
@@ -887,7 +1035,7 @@ int32_t main ()
                     }
                         break;
 
-                    case 'V':
+                    case c_wipe:
                         std::cout << "\033[0;37;40mAre you sure you want to wipe the board? (y/N)?" << std::endl;
                         kbPause();
                         if (getchar() == 'y') {
@@ -896,7 +1044,7 @@ int32_t main ()
                         }
                         break;
 
-                    case 'F': //Go-to
+                    case c_goto: //Go-to
                     {
                         std::cout << "\033[0;37;40mEnter X coord: ";
                         std::string x_coord = getInput(std::to_string(cursor_X), false);
@@ -909,36 +1057,36 @@ int32_t main ()
                     }
                         break;
 
-                    case 'f': //Crosshairs
+                    case c_toggle_UI: //Crosshairs & UI
                         if (to_crosshairs && to_hide_UI) { to_crosshairs = to_hide_UI = false; break; }
                         if (to_crosshairs) { to_hide_UI = true; break; }
                         to_crosshairs = true;
                         break;
 
-                    case 'p': //Next elec
+                    case c_next_elec: //Next elec
                         elec();
                         break;
 
-                    case 'P': //Toggle pause
+                    case c_toggle_pause: //Toggle pause
                         is_paused = !is_paused;
                         break;
 
-                    case 'i': //Slow-mo
+                    case c_slow_mo: //Slow-mo
                         is_slow_mo = !is_slow_mo;
                         is_fast_mo = false;
                         break;
 
-                    case 'I': //Fast-mo
+                    case c_fast_mo: //Fast-mo
                         is_fast_mo = !is_fast_mo;
                         is_slow_mo = false;
                         break;
 
-                    case '\'': //Label mode
+                    case c_toggle_label: //Label mode
                         is_label_mode = !is_label_mode;
                         start_label_X = cursor_X;
                         break;
 
-                    case '?': //Show welcome screen
+                    case c_help: //Show welcome screen
                         outputWelcome();
                         std::cout << "\nPress any key to return." << std::endl;
                         kbPause();

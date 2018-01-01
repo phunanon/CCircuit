@@ -7,6 +7,7 @@
 ##MINOR
 * Fix Stretcher powered by diode from flank
 * Fix delay in some key presses
+* Create to_autobridge on diodes &co
 
 ##TODO
 * Make Switches fully adaptable (+ change their handling to an actual UN/PW component)
@@ -14,7 +15,8 @@
 * Replace macro definitions with constant struct with display & storage information
 * Make autobridge and wire toggle A, make h and H direct wire directions
 * Don't allow movement out of bounds when pasting
-* Make bikeyboardal
+* Make keyboard customisable through configuration file
+* Improve Dvorak layout
 * Ensure paste text fits on screen at all sizes
 * Give clearer save success
 * Implement autosave

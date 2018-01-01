@@ -65,6 +65,9 @@ extern const std::string SYSPATH;
 extern std::string proj_name;
 extern bool is_run;
 
+enum Layout : uint8_t { kb_dvorak, kb_qwerty };
+extern Layout layout;
+
 extern const uint16_t elec_W;
 extern const uint16_t elec_H;
 extern char board[board_W][board_H];
