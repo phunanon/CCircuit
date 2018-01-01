@@ -2,7 +2,6 @@
 * Fix copy-paste restore
 
 ##MAJOR
-* Fix save overwrite when remove operation is delayed
 
 ##MINOR
 * Fix Stretcher powered by diode from flank
@@ -17,8 +16,8 @@
 * Make keyboard customisable through configuration file
 * Improve Dvorak layout
 * Ensure paste text fits on screen at all sizes
-* Give clearer save success
 * Implement autosave
 * Allow directory hopping when load/save autocomplete/project name
 * Implement smart far copy (jump to end of circuit)
 * Make delay multi-directional
+* Move load/save into seperate file

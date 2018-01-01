@@ -152,6 +152,7 @@ void saveBoard (std::string save_name, bool _is_component = false)
     elecReCalculate();
     std::cout << "Saving..." << std::endl;
     system(("rm " + save_name + ".gz &> /dev/null").c_str());
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::string save_data = "";
     
     uint16_t x1, y1, x2, y2;
@@ -205,6 +206,7 @@ void saveBoard (std::string save_name, bool _is_component = false)
     std::ofstream out(save_name.c_str());
     out << save_data;
     out.close();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "Compressing..." << std::endl;
     system((SYSPATH + "gzip " + save_name).c_str());
 }
@@ -215,11 +217,14 @@ void loadBoard (std::string load_name, bool _is_component = false)
   //Decompress project from storage
     std::cout << "Decompressing..." << std::endl;
     system(("cp " + load_name + ".gz load.gz").c_str());
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     system((SYSPATH + "gzip -d load.gz").c_str());
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::string load_data = "";
     std::ifstream in("load");
     load_data = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     system("rm load");
     std::cout << "Loading..." << std::endl;
   //Load project/component from decompressed data
