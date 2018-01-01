@@ -6,6 +6,8 @@ std::string proj_name = "untitled";
 bool is_run = true;
 
 Layout layout = kb_qwerty;
+Control controls[127] = { c_nothing };
+char keys[127] = { ' ' };
 
 const uint16_t elec_W = board_W - 2;
 const uint16_t elec_H = board_H - 2;

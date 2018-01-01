@@ -67,6 +67,9 @@ extern bool is_run;
 
 enum Layout : uint8_t { kb_dvorak, kb_qwerty };
 extern Layout layout;
+enum Control { c_nothing, c_remove, c_electrify, c_quit, c_quit_hard, c_backspace, c_select, c_north, c_east, c_south, c_west, c_far_north, c_far_east, c_far_south, c_far_west, c_wire, c_toggle_autobridge, c_toggle_wire, c_AND, c_NOT, c_XOR, c_bridge, c_leaky_bridge, c_power, c_random, c_far_lay, c_wall, c_e_wall, c_north_diode, c_east_diode, c_south_diode, c_west_diode, c_delay, c_display, c_stretcher, c_bit, c_adapter, c_undo, c_redo, c_paste, c_paste_unelec, c_paste_x_flip, c_paste_y_flip, c_paste_move, c_paste_swap, c_clear_area, c_paste_mask, c_undo_paste, c_load_component, c_load_project, c_save, c_wipe, c_goto, c_toggle_UI, c_slow_mo, c_fast_mo, c_toggle_label, c_next_elec, c_toggle_pause, c_help };
+extern Control controls[127];
+extern char keys[127];
 
 extern const uint16_t elec_W;
 extern const uint16_t elec_H;

@@ -37,7 +37,7 @@ const std::string display_colour[] = {
     "30;47", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42", "37;43", "1;37;43", "37;41",                 //0-9
     "1;37;41", "37;45", "1;37;45", "30;47", "30;42", "30;47", "30;42", "4;30;47", "4;30;42", "1;37;44",         //10-19
     "1;30;40", "1;30;40", "1;30;47", "1;37;44", "30;47", "30;42", "30;47", "30;42", "30;47", "30;42",           //20-29
-    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "1;30;40", "1;34;44",   //30-39
+    "30;47", "30;42", "1;30;47", "1;30;47", "1;30;42", "1;30;42", "1;30;47", "1;30;42", "30;40", "34;44",       //30-39
     "37;44", "1;37;44", "", "", "", "", "", "", "", "",                                                         //40-49
     "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47", "1;31;47"//50-59
 };
@@ -80,10 +80,18 @@ void display ()
         buffer += "\033[37;40m";
         bar_off_len += 8;
         buffer += (!is_label_mode && !is_copying ? "  " + std::string(is_dir_wire ? "-|" : "#") : ""); 
-        buffer += (is_copying ? "  SELECT x:complete" : (is_data_to_paste ?
-            (is_no_copy_source ?
-                "  PASTING x:dismiss b:paste B:unelec m:x-flip w:y-flip J:mask" : "  PASTING x:dismiss b:paste B:unelec k:cut K:swap j:clear m:x-flip w:y-flip J:mask Y:save")
-            : ""));
+        if (is_copying) {
+            buffer += "  SELECT "+ std::string(1, keys[c_select]) +":complete";
+        } else {
+            if (is_data_to_paste) {
+                buffer += "  PASTING ";
+                if (is_no_copy_source) {
+                    buffer += std::string(1, keys[c_select]) +":dismiss "+ std::string(1, keys[c_paste]) +":paste "+ std::string(1, keys[c_paste_unelec]) +":unelec "+ std::string(1, keys[c_paste_x_flip]) +":x-flip "+ std::string(1, keys[c_paste_y_flip]) +":y-flip "+ std::string(1, keys[c_paste_mask]) +":mask";
+                } else {
+                    buffer += std::string(1, keys[c_select]) +":dismiss "+ std::string(1, keys[c_paste]) +":paste "+ std::string(1, keys[c_paste_unelec]) +":unelec "+ std::string(1, keys[c_paste_move]) +":cut "+ std::string(1, keys[c_paste_swap]) +":swap "+ std::string(1, keys[c_clear_area]) +":clear "+ std::string(1, keys[c_paste_x_flip]) +":x-flip "+ std::string(1, keys[c_paste_y_flip]) +":y-flip "+ std::string(1, keys[c_paste_mask]) +":mask "+ std::string(1, keys[c_save]) +":save";
+                }
+            }
+        }
         buffer += (is_auto_bridge ? "  auto bridge" : "");
         buffer += (is_slow_mo ? "  slow-mo" : (is_fast_mo ? "  fast-mo" : ""));
         buffer += (is_paused ? "  paused" : "");
