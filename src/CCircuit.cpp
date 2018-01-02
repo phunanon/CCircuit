@@ -238,7 +238,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
             rough_H = len / i;
             if (_is_component) {
                 paste_X_dist = rough_W;
-                paste_Y_dist = rough_H - 1;
+                paste_Y_dist = rough_H;
             } else {
                 top_left_X = board_W/2 - rough_W/2;
                 top_left_Y = board_H/2 - rough_H/2;
