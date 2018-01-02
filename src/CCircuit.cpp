@@ -363,6 +363,7 @@ void outputWelcome ()
               << wh(blob[19]) +"... paste mask, paste x flip, paste y flip"
               << wh(blob[17]) +"restore last cut/paste operation"
               << "\n\n- After initiating a selection, you can do a Save to export that component."
+              << "\n\n- Don't be afraid to import a project as a component!"
               << bl("\n\nINFORMATION\n===========")
               << "\n- Electronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
               << "\n- Execute as ./CCircuit dvorak to change keyboard layout"
@@ -547,6 +548,7 @@ int32_t main (int argc, char* argv[])
                 *look = pressed_ch;
                 prev_dir_Y = prev_dir_X = 0;
                 prev_dir_X = 1;
+                to_move = true;
             } else {
 
                 uint8_t move_dist = 1;
@@ -604,10 +606,8 @@ int32_t main (int argc, char* argv[])
                         }
                         break;
 
-                    case c_backspace: //Left-remove
+                    case c_backspace: //Left-remove (usually in label making)
                         if (cursor_X > 1) { --cursor_X; }
-                        prev_dir_Y = 0;
-                        prev_dir_X = -1;
                         look = &board[cursor_X][cursor_Y];
                     case c_remove: //Remove
                         if (*look == 50 + switch_num) { //If on top of a switch, remove it correctly
@@ -615,7 +615,7 @@ int32_t main (int argc, char* argv[])
                             to_move = true;
                         }
                         *look = EMPTY;
-                        to_move = (pressed_ch == 127 ? false : true);
+                        to_move = (pressed_control != c_backspace);
                         break;
 
                     case c_wire: //Wire
@@ -1070,6 +1070,8 @@ int32_t main (int argc, char* argv[])
                     case c_toggle_label: //Label mode
                         is_label_mode = !is_label_mode;
                         start_label_X = cursor_X;
+                        prev_dir_Y = prev_dir_X = 0;
+                        prev_dir_X = 1;
                         break;
 
                     case c_help: //Show welcome screen
@@ -1108,7 +1110,7 @@ int32_t main (int argc, char* argv[])
                     else if (cursor_Y > elec_Y2) { elec_Y2 = cursor_Y; }
                 }
             }
-            if (to_move || is_label_mode) { //We placed something, so lets move out of the way
+            if (to_move) { //We placed something, so lets move out of the way
                 cursor_X += prev_dir_X;
                 cursor_Y += prev_dir_Y;
                 //This was probably an action requiring an undo, so let's record it
