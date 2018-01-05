@@ -308,14 +308,16 @@ void loadBoard (std::string load_name, bool _is_component = false)
                 ++x;
             }
         }
-      //Recalculate electrification area
-        elecReCalculate();
-      //Move cursor
-        if (!_is_component && proj_name != load_name) {
-            cursor_X = elec_X + (elec_X2 - elec_X > MOVE_FAR ? MOVE_FAR*2 : 0);
-            cursor_Y = elec_Y + (elec_Y2 - elec_X > MOVE_FAR ? MOVE_FAR : 0);
-          //Set project name
-            proj_name = load_name;
+        if (!_is_component) {
+          //Recalculate electrification area
+            elecReCalculate();
+            if (proj_name != load_name) {
+              //Move cursor
+                cursor_X = elec_X + (elec_X2 - elec_X > MOVE_FAR ? MOVE_FAR*2 : 0);
+                cursor_Y = elec_Y + (elec_Y2 - elec_X > MOVE_FAR ? MOVE_FAR : 0);
+              //Set project name
+                proj_name = load_name;
+            }
         }
     }
 }
