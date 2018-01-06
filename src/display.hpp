@@ -10,6 +10,7 @@
 
 extern bool to_crosshairs;
 extern bool to_hide_UI;
+void clearScreen ();
 void display ();
 
 #endif

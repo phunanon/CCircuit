@@ -337,38 +337,39 @@ void outputWelcome ()
     std::string blob[24] = l_blob[layout];
     uint8_t l = layout;
     std::cout << rd("\nCCircuit - a Linux terminal logic circuit simulator & IDE\nPatrick Bowen @phunanon 2017\n")
-              << bl("\nINSTRUCTIONS\n============")
-              << wh(blob[0]) +"remove anything"
-              << wh(blob[1]) +"electrify cursor"
+              << bl("\n  Controls")
               << wh(blob[2]) +"up, left, down, right"
               << wh(blob[3]) +"far up, far left, far down, far right"
-              << wh(blob[4]) +"place wire, toggle general use wire/directional wire"
               << wh(blob[5]) +"toggle auto-bridge for wires and diodes"
               << wh(blob[6]) +"far lay under cursor"
               << wh(blob[7]) +"crosshairs/hide UI"
               << wh(blob[8]) +"go-to coordinates"
-              << wh("0-9") +"place/toggle switch"
-              << wh(blob[9]) +"North/South/West/East diodes"
-              << wh(blob[10]) +"bridge, leaky bridge, power, random"
-              << wh(blob[11]) +"AND, NOT, XOR, adapter"
-              << wh(blob[12]) +"delay, display, stretcher, bit"
               << wh(blob[13]) +"pause, next, slow-motion, fast-motion"
-              << wh(";:") +"wall, conductive wall"
               << wh(blob[14]) +"load, save, import component, wipe board"
               << wh("'") +"toggle [lowercase] label mode"
               << wh(blob[15]) +"undo, redo"
               << wh("qQ") +"quit/no onexitsave quit"
               << wh("?") +"show this welcome screen"
-              << std::endl
+              << bl("\n  Placement")
+              << wh(blob[0]) +"remove anything"
+              << wh(blob[1]) +"electrify cursor"
+              << wh(blob[4]) +"place wire, toggle general use wire/directional wire"
+              << wh("0-9") +"place/toggle switch"
+              << wh(blob[9]) +"North/South/West/East diodes"
+              << wh(blob[10]) +"bridge, leaky bridge, power, random"
+              << wh(blob[11]) +"AND, NOT, XOR, adapter"
+              << wh(blob[12]) +"delay, display, stretcher, bit"
+              << wh(";:") +"wall, conductive wall"
+              << bl("\n  Copy/paste")
               << wh(blob[16]) +"initiate/complete/discard selection, paste"
               << wh(blob[18]) +"... paste unelectrified, move, swap, clear area"
               << wh(blob[19]) +"... paste mask, paste x flip, paste y flip"
               << wh(blob[17]) +"restore last cut/paste operation"
-              << "\n\n- After initiating a selection, you can do a Save to export that component."
-              << "\n\n- Don't be afraid to import a project as a component!"
-              << bl("\n\nINFORMATION\n===========")
+              << bl("\n  Notes")
+              << "\n- After initiating a selection, you can do a Save to export that component."
+              << "\n- Don't be afraid to import a project as a component!"
               << "\n- Electronic tick is 1/10s (normal), 1s (slow), 1/80s (fast)"
-              << "\n- Execute as ./CCircuit dvorak to change keyboard layout"
+              << "\n- Execute as \"./CCircuit dvorak\" to change keyboard layout"
               << std::endl;
 }
 
@@ -512,6 +513,7 @@ char prev_dir_X, prev_dir_Y, prev_Z, elec_counter;
 uint16_t prev_X, prev_Y;
 int32_t main (int argc, char* argv[])
 {
+    clearScreen();
   //Load shite to listen to pressed keys
     loadKeyListen();
     auto kbPause = []() { while (!kbhit()) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); } };
@@ -519,7 +521,7 @@ int32_t main (int argc, char* argv[])
     determineKbLayout(argc, argv);
   //Welcome screen
     outputWelcome();
-    std::cout << "\n\nInitialising board..." << std::endl;
+  //Init board
     memset(board, 0, sizeof(board[0][0]) * board_H * board_W); //Set the board Empty
     prev_dir_Y = 1;
     std::cout << "\033[37;40mLoad onexitsave? (Y/n): "; fflush(stdout);
