@@ -64,7 +64,6 @@ void display ()
     std::string buffer;
     std::string buff;
     buffer = "";
-    clearScreen();
   //Top bar
     if (!to_hide_UI) {
         uint16_t bar_off_len = 0;
@@ -215,7 +214,7 @@ void display ()
                     buff = "+";
                     break;
                 case PW_DISPLAY: //Powered Display
-                    buff = " ";
+                    buff = "+";
                     break;
                 case UN_RANDOM: //Random
                 case PW_RANDOM: //Powered Random
@@ -273,6 +272,7 @@ void display ()
             buffer += buff;
         }
     }
+    clearScreen();
     std::cout << buffer;
     fflush(stdout);
     to_copy_cursor = false;
