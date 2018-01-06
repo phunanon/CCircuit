@@ -22,7 +22,7 @@ void saveBoard (std::string save_name, bool _is_component)
         y2 = elec_Y2;
     }
 
-    std::string save_data = "P5\n"+ std::to_string((x2 - x1) + 2) +" "+ std::to_string(y2 - y1) +"\n127\n"; //PGM header
+    std::string save_data = "P5\n"+ std::to_string((x2 - x1) + 2) +" "+ std::to_string((y2 - y1) + 1) +"\n127\n"; //PGM header
 
     for (uint16_t y = y1; y <= y2; ++y) {
         for (uint16_t x = x1; x <= x2; ++x) {
