@@ -182,7 +182,7 @@ void saveBoard (std::string save_name, bool _is_component = false)
                 case UN_LEAKYB: case PW_LEAKYB:     save_data += '~'; break;
                 case PW_POWER:                      save_data += '@'; break;
                 case UN_WALL:                       save_data += ';'; break;
-                case E_WALL:                        save_data += ':'; break;
+                case B_WALL:                        save_data += ':'; break;
                 case UN_BIT:                        save_data += 'B'; break;
                 case PW_BIT:                        save_data += '&'; break;
                 case UN_N_DIODE: case PW_N_DIODE:   save_data += '^'; break;
@@ -278,7 +278,7 @@ void loadBoard (std::string load_name, bool _is_component = false)
                     case '~': load_char = UN_LEAKYB;  break;
                     case '@': load_char = PW_POWER;   break;
                     case ';': load_char = UN_WALL;    break;
-                    case ':': load_char = E_WALL;     break;
+                    case ':': load_char = B_WALL;     break;
                     case 'B': load_char = UN_BIT;     break;
                     case '&': load_char = PW_BIT;     break;
                     case '^': load_char = UN_N_DIODE; break;
@@ -359,7 +359,7 @@ void outputWelcome ()
               << wh(blob[10]) +"bridge, leaky bridge, power, random"
               << wh(blob[11]) +"AND, NOT, XOR, adapter"
               << wh(blob[12]) +"delay, display, stretcher, bit"
-              << wh(";:") +"wall, conductive wall"
+              << wh(";:") +"wall, bridge wall"
               << bl("\n  Copy/paste")
               << wh(blob[16]) +"initiate/complete/discard selection, paste"
               << wh(blob[18]) +"... paste unelectrified, move, swap, clear area"
@@ -418,7 +418,7 @@ void determineKbLayout (int argc, char* argv[])
             controls['_']   = c_random;
             controls['L']   = c_far_lay;
             controls[';']   = c_wall;
-            controls[':']   = c_e_wall;
+            controls[':']   = c_b_wall;
             controls['c']   = c_north_diode;
             controls['r']   = c_east_diode;
             controls['C']   = c_south_diode;
@@ -470,7 +470,7 @@ void determineKbLayout (int argc, char* argv[])
             controls['r']   = c_random;
             controls['F']   = c_far_lay;
             controls[';']   = c_wall;
-            controls[':']   = c_e_wall;
+            controls[':']   = c_b_wall;
             controls['g']   = c_north_diode;
             controls['H']   = c_east_diode;
             controls['h']   = c_south_diode;
@@ -698,8 +698,8 @@ int32_t main (int argc, char* argv[])
                         to_move = true;
                         break;
 
-                    case c_e_wall: //Conductive Wall
-                        *look = E_WALL;
+                    case c_b_wall: //Bridge Wall
+                        *look = B_WALL;
                         to_move = true;
                         break;
 

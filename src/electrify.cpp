@@ -221,7 +221,7 @@ void elec () //Electrify the board appropriately
             else if (*look == UN_WIRE)    { *look = PW_WIRE; }    //Electrify Wire
             else if (*look == UN_H_WIRE)  { *look = PW_H_WIRE; }  //Electrify H Wire
             else if (*look == UN_V_WIRE)  { *look = PW_V_WIRE; }  //Electrify V Wire
-            else if (*look == E_WALL || is_bridge) { //If we've ended up in a Bridge, or Conductive Wall, continue in the direction we were going
+            else if (*look == B_WALL || is_bridge) { //If we've ended up in a Bridge, or Bridge Wall, continue in the direction we were going
               //Electrify & leak
                 if (*look == UN_BRIDGE) { *look = PW_BRIDGE; }
                 if (*look == UN_LEAKYB) { *look = PW_LEAKYB; }
@@ -307,7 +307,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_V_WIRE)                    { ++routes; can_north = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_north = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_north = true; *look = PW_LEAKYB; }
-                else if (*look == E_WALL)                       { ++routes; can_double_north = true; }
+                else if (*look == B_WALL)                       { ++routes; can_double_north = true; }
             }
           //East
             if (can_H && *dir != WEST)                  {
@@ -316,7 +316,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_H_WIRE)                    { ++routes; can_east = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_east = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_east = true; *look = PW_LEAKYB; }
-                else if (*look == E_WALL)                       { ++routes; can_double_east = true; }
+                else if (*look == B_WALL)                       { ++routes; can_double_east = true; }
             }
           //South
             if (can_V && *dir != NORTH && branch[b].y)  {
@@ -325,7 +325,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_V_WIRE)                    { ++routes; can_south = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_south = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_south = true; *look = PW_LEAKYB; }
-                else if (*look == E_WALL)                       { ++routes; can_double_south = true; }
+                else if (*look == B_WALL)                       { ++routes; can_double_south = true; }
             }
           //West
             if (can_H && *dir != EAST)                  {
@@ -334,7 +334,7 @@ void elec () //Electrify the board appropriately
                 else if (*look == UN_H_WIRE)                    { ++routes; can_west = true; }
                 else if (isXBridge(*look))                      { ++routes; can_double_west = true; *look = PW_BRIDGE; }
                 else if (isXLeakyB(*look))                      { ++routes; can_west = true; *look = PW_LEAKYB; }
-                else if (*look == E_WALL)                       { ++routes; can_double_west = true; }
+                else if (*look == B_WALL)                       { ++routes; can_double_west = true; }
             }
 
             if (routes == 0) {

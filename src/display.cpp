@@ -172,7 +172,7 @@ void display ()
                 case UN_WALL: //Wall
                     buff = ";";
                     break;
-                case E_WALL: //Conductive Wall
+                case B_WALL: //Bridge Wall
                     buff = ":";
                     break;
                 case UN_BIT: //Bit
