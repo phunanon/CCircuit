@@ -8,8 +8,7 @@ void saveBoard (std::string save_name, bool _is_component)
     std::cout << "Saving..." << std::endl;
     system(("rm " + save_name + ".gz &> /dev/null").c_str());
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::string save_data = "";
-    
+
     uint16_t x1, y1, x2, y2;
     if (_is_component) {
         x1 = copy_X;
@@ -22,7 +21,9 @@ void saveBoard (std::string save_name, bool _is_component)
         x2 = elec_X2;
         y2 = elec_Y2;
     }
-    
+
+    std::string save_data = "P5\n"+ std::to_string((x2 - x1) + 2) +" "+ std::to_string(y2 - y1) +"\n127\n"; //PGM header
+
     for (uint16_t y = y1; y <= y2; ++y) {
         for (uint16_t x = x1; x <= x2; ++x) {
             switch (board[x][y]) {
@@ -83,8 +84,20 @@ void loadBoard (std::string load_name, bool _is_component)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     system("rm load");
     std::cout << "Loading..." << std::endl;
-  //Load project/component from decompressed data
     uint64_t len = load_data.length();
+    if (!len) { return; }
+  //Strip PGM header data
+    uint8_t pgm_strip_count = 0;
+    for (uint8_t pgm_offset = 0; pgm_offset < 255; ++pgm_offset) {
+        if (pgm_strip_count < 3) {
+            pgm_strip_count += (load_data[pgm_offset] == '\n');
+        } else {
+            load_data.erase(0, pgm_offset);
+            len -= pgm_offset;
+            break;
+        }
+    }
+  //Load project/component from decompressed data
     uint16_t top_left_X = 0, top_left_Y = 0;
   //Either: find rough project dimensions to place the project in the middle of the board OR to define paste size for component
     uint16_t rough_W, rough_H;
@@ -112,68 +125,66 @@ void loadBoard (std::string load_name, bool _is_component)
         wipeBoard();
     }
   //Iterate through data
-    if (len > 0) {
-        uint8_t load_char;
-        uint16_t x = top_left_X, y = top_left_Y;
-        for (uint32_t i = 0; i < len; ++i) {
-            if (load_data[i] == '\n') {
-                ++y;
-                x = top_left_X;
+    uint8_t load_char;
+    uint16_t x = top_left_X, y = top_left_Y;
+    for (uint32_t i = 0; i < len; ++i) {
+        if (load_data[i] == '\n') {
+            ++y;
+            x = top_left_X;
+        } else {
+            load_char = EMPTY;
+            switch (load_data[i])
+            {
+                case ' ': break; //Empty
+                case '#': load_char = UN_WIRE;    break;
+                case '-': load_char = UN_H_WIRE;  break;
+                case '|': load_char = UN_V_WIRE;  break;
+                case 'A': load_char = UN_AND;     break;
+                case 'N': load_char = UN_NOT;     break;
+                case 'X': load_char = UN_XOR;     break;
+                case '+': load_char = UN_BRIDGE;  break;
+                case '~': load_char = UN_LEAKYB;  break;
+                case '@': load_char = PW_POWER;   break;
+                case ';': load_char = UN_WALL;    break;
+                case ':': load_char = B_WALL;     break;
+                case 'B': load_char = UN_BIT;     break;
+                case '&': load_char = PW_BIT;     break;
+                case '^': load_char = UN_N_DIODE; break;
+                case '>': load_char = UN_E_DIODE; break;
+                case 'V': load_char = UN_S_DIODE; break;
+                case '<': load_char = UN_W_DIODE; break;
+                case '%': load_char = UN_DELAY;   break;
+                case '$': load_char = U1_STRETCH; break;
+                case 'D': load_char = UN_DISPLAY; break;
+                case 'O': load_char = UN_ADAPTER; break;
+                case 'R': load_char = UN_RANDOM;  break;
+            }
+            if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
+            {
+                switch_num = load_data[i] - 48;
+                load_char = switch_num + 50;
+                switches[switch_num] = false; //Set its power
+                placed_switches[switch_num] = true; //Say it's placed
+            } else if (load_data[i] >= 97 && load_data[i] <= 122) { //Is label?
+                load_char = load_data[i];
+            }
+            if (_is_component) {
+                copy_data->push_back(load_char);
             } else {
-                load_char = EMPTY;
-                switch (load_data[i])
-                {
-                    case ' ': break; //Empty
-                    case '#': load_char = UN_WIRE;    break;
-                    case '-': load_char = UN_H_WIRE;  break;
-                    case '|': load_char = UN_V_WIRE;  break;
-                    case 'A': load_char = UN_AND;     break;
-                    case 'N': load_char = UN_NOT;     break;
-                    case 'X': load_char = UN_XOR;     break;
-                    case '+': load_char = UN_BRIDGE;  break;
-                    case '~': load_char = UN_LEAKYB;  break;
-                    case '@': load_char = PW_POWER;   break;
-                    case ';': load_char = UN_WALL;    break;
-                    case ':': load_char = B_WALL;     break;
-                    case 'B': load_char = UN_BIT;     break;
-                    case '&': load_char = PW_BIT;     break;
-                    case '^': load_char = UN_N_DIODE; break;
-                    case '>': load_char = UN_E_DIODE; break;
-                    case 'V': load_char = UN_S_DIODE; break;
-                    case '<': load_char = UN_W_DIODE; break;
-                    case '%': load_char = UN_DELAY;   break;
-                    case '$': load_char = U1_STRETCH; break;
-                    case 'D': load_char = UN_DISPLAY; break;
-                    case 'O': load_char = UN_ADAPTER; break;
-                    case 'R': load_char = UN_RANDOM;  break;
-                }
-                if (load_data[i] >= 48 && load_data[i] <= 57) //Is switch?
-                {
-                    switch_num = load_data[i] - 48;
-                    load_char = switch_num + 50;
-                    switches[switch_num] = false; //Set its power
-                    placed_switches[switch_num] = true; //Say it's placed
-                } else if (load_data[i] >= 97 && load_data[i] <= 122) { //Is label?
-                    load_char = load_data[i];
-                }
-                if (_is_component) {
-                    copy_data->push_back(load_char);
-                } else {
-                    board[x][y] = load_char;
-                }
-                ++x;
+                board[x][y] = load_char;
             }
+            ++x;
         }
-        if (!_is_component) {
-          //Recalculate electrification area
-            elecReCalculate();
-            if (proj_name != load_name) {
-              //Move cursor
-                cursor_X = elec_X + (elec_X2 - elec_X > MOVE_FAR ? MOVE_FAR*2 : 0);
-                cursor_Y = elec_Y + (elec_Y2 - elec_X > MOVE_FAR ? MOVE_FAR : 0);
-              //Set project name
-                proj_name = load_name;
-            }
+    }
+    if (!_is_component) {
+      //Recalculate electrification area
+        elecReCalculate();
+        if (proj_name != load_name) {
+          //Move cursor
+            cursor_X = elec_X + (elec_X2 - elec_X > MOVE_FAR ? MOVE_FAR*2 : 0);
+            cursor_Y = elec_Y + (elec_Y2 - elec_X > MOVE_FAR ? MOVE_FAR : 0);
+          //Set project name
+            proj_name = load_name;
         }
     }
 }
