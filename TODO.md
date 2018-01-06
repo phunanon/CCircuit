@@ -23,6 +23,5 @@
 * Allow directory hopping when load/save autocomplete/project name
 * Implement smart far copy (jump to end of circuit)
 * Make delay multi-directional
-* Move load/save into seperate file
 * Move input functions into seperate file
 * Make Windows compatible
