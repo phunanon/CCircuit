@@ -152,7 +152,7 @@ void outputWelcome ()
     auto bl = [](std::string text) { return "\033[1;34;40m"+ text +"\033[0m\t"; }; //Colour text to light blue on black
     const std::string l_blob[2][24] = {
       //Dvorak
-        { "[space]", "[enter]", ".oeu", ">OEU", "hH", "A", "L", "f", "F", "crCR", "gGl_", "tns-", "dDSb", "PpiI", "yYvW", "zZ", "ax", "X", "BkKj", "Mmw" },
+        { "[space]", "[enter]", ".oeu", ">OEU", "hH", "A", "L", "f", "F", "CrcR", "gGl_", "tns-", "dDSb", "PpiI", "yYvW", "zZ", "ax", "X", "BkKj", "Mmw" },
       //Qwerty
         { "[space]", "[enter]", "ijkl", "IJKL", "fw", "+", "F", "u", "=", "ghGH", "tTer", "anAE", "dDsb", "Pp-_", "oSOW", "zy", "cv", "Z", "VxXM", "m,<" }
     };
@@ -241,9 +241,9 @@ void determineKbLayout (int argc, char* argv[])
             controls['L']   = c_far_lay;
             controls[';']   = c_wall;
             controls[':']   = c_b_wall;
-            controls['c']   = c_north_diode;
+            controls['C']   = c_north_diode;
             controls['r']   = c_east_diode;
-            controls['C']   = c_south_diode;
+            controls['c']   = c_south_diode;
             controls['R']   = c_west_diode;
             controls['d']   = c_delay;
             controls['D']   = c_display;

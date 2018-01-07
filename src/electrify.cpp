@@ -21,6 +21,8 @@ void wipeBoard ()
   //Remove all previous electricity
     memset(branch, 0, sizeof(branch));
     branches = 0;
+  //Reset project name
+    proj_name = "untitled";
 }
 
 void elecReCalculate ()
